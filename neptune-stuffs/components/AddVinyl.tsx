@@ -1,51 +1,34 @@
 'use client';
 
-import { useState, useRef, useTransition, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { addVinylAction } from '@/app/actions';
 
 export default function AddVinyl() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [errors, setErrors] = useState<{ artist?: string[], title?: string[], year?: string[] }>({});
-  const [serverError, setServerError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsModalOpen(false);
-      }
-    };
-    if (isModalOpen) {
-      window.addEventListener('keydown', handleKeyDown);
-    }
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isModalOpen]);
+  // 1. La fonction accepte maintenant l'événement du formulaire
+  const handleFormSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    // 2. On empêche le navigateur de soumettre le formulaire par lui-même
+    event.preventDefault();
 
-  const handleFormSubmit = (formData: FormData) => {
-    setErrors({});
-    setServerError(null);
-    startTransition(async () => {
-      const result = await addVinylAction(formData);
-      if (result.success) {
-        setIsModalOpen(false);
-        formRef.current?.reset();
-      } else {
-        if (result.error) {
-          setErrors(result.error);
-        }
-        if (result.serverError) {
-          setServerError(result.serverError);
-        }
-      }
-    });
+    // 3. On récupère les données directement depuis l'événement
+    const formData = new FormData(event.currentTarget);
+    
+    const result = await addVinylAction(formData);
+
+    if (result.success) {
+      setIsModalOpen(false);
+      formRef.current?.reset();
+    } else {
+      alert(result.error || "Une erreur est survenue.");
+    }
   };
 
   return (
     <>
-      <button type='button'
+      <button
+      type='button'
         onClick={() => setIsModalOpen(true)}
         className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors duration-300"
       >
@@ -53,21 +36,16 @@ export default function AddVinyl() {
       </button>
 
       {isModalOpen && (
-        <button
-          type="button"
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center w-full h-full p-0 border-none bg-transparent text-left cursor-default"
-          onClick={() => setIsModalOpen(false)}
-          tabIndex={-1}
-          aria-label="Fermer la modale"
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center"
         >
-          {/* biome-ignore lint/a11y/noStaticElementInteractions: Stop propagation is a technical requirement, not a user interaction. */}
-          <div
+          <div 
             className="bg-white p-8 rounded-lg shadow-2xl z-50 w-full max-w-md"
-            onClick={e => e.stopPropagation()}
-            role="presentation"
           >
             <h2 className="text-2xl font-bold mb-6 text-gray-800">Nouveau Vinyle</h2>
-            <form action={handleFormSubmit} ref={formRef}>
+            
+            {/* 4. On utilise "onSubmit" au lieu de "action" */}
+            <form onSubmit={handleFormSubmit} ref={formRef}>
               <div className="mb-4">
                 <label htmlFor="artist" className="block text-gray-700 text-sm font-bold mb-2">
                   Artiste
@@ -76,11 +54,11 @@ export default function AddVinyl() {
                   type="text"
                   id="artist"
                   name="artist"
-                  className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${errors.artist ? 'border-red-500' : ''}`}
+                  required
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 />
-                {errors.artist && <p className="text-red-500 text-xs italic mt-1">{errors.artist[0]}</p>}
               </div>
-              <div className="mb-4">
+              <div className="mb-6">
                 <label htmlFor="title" className="block text-gray-700 text-sm font-bold mb-2">
                   Titre de l'album
                 </label>
@@ -88,12 +66,11 @@ export default function AddVinyl() {
                   type="text"
                   id="title"
                   name="title"
-                  className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${errors.title ? 'border-red-500' : ''}`}
+                  required
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 />
-                {errors.title && <p className="text-red-500 text-xs italic mt-1">{errors.title[0]}</p>}
               </div>
-              {serverError && <p className="text-red-500 text-sm mb-4">{serverError}</p>}
-
+              
               <div className="flex items-center justify-end space-x-4">
                 <button
                   type="button"
@@ -104,16 +81,17 @@ export default function AddVinyl() {
                 </button>
                 <button
                   type="submit"
-                  disabled={isPending}
-                  className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors disabled:bg-indigo-300"
+                  className="bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition-colors" 
+                    onClick={() => setIsModalOpen(false)}
                 >
-                  {isPending ? 'Ajout en cours...' : 'Ajouter'}
+                  Ajouter
                 </button>
               </div>
             </form>
           </div>
-        </button>
+        </div>
       )}
     </>
   );
 }
+
