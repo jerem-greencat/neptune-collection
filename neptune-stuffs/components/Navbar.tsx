@@ -33,8 +33,8 @@ export default function Navbar() {
             <Link href="/vinyls" className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors duration-300">
               <span>Vinyles</span>
             </Link>
-            <Link href="/dvd" className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors duration-300">
-              <span>DVD</span>
+            <Link href="/dvds" className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100 transition-colors duration-300">
+              <span>DVDs</span>
             </Link>
           </div>
         )}

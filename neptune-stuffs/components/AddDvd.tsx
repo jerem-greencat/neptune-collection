@@ -1,9 +1,9 @@
 'use client';
 
-import { addVinylAction } from '@/app/actions';
+import { addDvdAction } from '@/app/actions';
 import { useState, useTransition, useRef } from 'react';
 
-export default function AddVinyl() {
+export default function AddDvd() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -14,7 +14,7 @@ export default function AddVinyl() {
     setErrorMessage(null);
 
     startTransition(async () => {
-      const result = await addVinylAction(formData);
+      const result = await addDvdAction(formData);
       
       if (result.success) {
         setIsModalOpen(false); 
@@ -36,7 +36,7 @@ export default function AddVinyl() {
         onClick={() => setIsModalOpen(true)}
         className="mb-6 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
       >
-        Ajouter un vinyle ➕
+        Ajouter un Dvd 🎬
       </button>
 
       {isModalOpen && (
@@ -44,7 +44,7 @@ export default function AddVinyl() {
           <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-sm">
             
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-800">Nouveau Vinyle</h2>
+              <h2 className="text-2xl font-bold text-gray-800">Nouveau Dvd</h2>
               <button 
                 type='button' 
                 onClick={handleCloseModal} 
@@ -56,18 +56,6 @@ export default function AddVinyl() {
 
             <form ref={formRef} action={handleSubmit}>
               <div className="mb-4">
-                <label htmlFor="artist" className="block text-gray-700 text-sm font-bold mb-2">
-                  Artiste
-                </label>
-                <input
-                  type="text"
-                  id="artist"
-                  name="artist"
-                  required
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                />
-              </div>
-              <div className="mb-6">
                 <label htmlFor="title" className="block text-gray-700 text-sm font-bold mb-2">
                   Titre
                 </label>
