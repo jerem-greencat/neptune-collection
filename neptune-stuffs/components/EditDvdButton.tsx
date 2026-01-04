@@ -39,7 +39,7 @@ export default function EditDvdButton({ dvdId, currentTitle }: EditDvdButtonProp
         className="text-blue-500 hover:text-blue-700 text-sm font-medium"
         aria-label={`Modifier ${currentTitle}`}
       >
-        Modifier ✏️
+        Modifier <span className='hidden md:block'>✏️</span>
       </button>
 
       {isModalOpen && (

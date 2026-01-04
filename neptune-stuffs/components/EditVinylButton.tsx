@@ -40,7 +40,7 @@ export default function EditVinylButton({ vinylId, currentArtist, currentTitle }
         className="text-blue-500 hover:text-blue-700 text-sm font-medium"
         aria-label={`Modifier ${currentTitle}`}
       >
-        Modifier ✏️
+        Modifier <span className='hidden md:block'>✏️</span>
       </button>
 
       {isModalOpen && (

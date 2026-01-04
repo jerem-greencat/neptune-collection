@@ -52,7 +52,7 @@ export default async function DvdsPage() {
                   <p className="text-xl font-semibold">{dvd.title}</p>
                 </div>
 
-                <div className="flex space-x-4"> 
+                <div className="flex flex-col md:flex-row space-x-4"> 
                   <EditDvdButton 
                     dvdId={dvd._id.toString()}
                     currentTitle={dvd.title}

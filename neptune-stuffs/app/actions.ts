@@ -70,10 +70,10 @@ export async function deleteDvdAction(formData: FormData) {
     const db = client.db("neptune-collection");
 
     await db.collection("dvds").deleteOne({
-      _id: new ObjectId(parsed.data.dvdId) 
+      _id: new ObjectId(parsed.data.dvdId)
     });
 
-    revalidatePath("/dvds"); 
+    revalidatePath("/dvds");
     return { success: true };
 
   } catch (error) {
@@ -104,11 +104,11 @@ export async function updateDvdAction(formData: FormData) {
     const { dvdId, title } = parsed.data;
 
     await db.collection("dvds").updateOne(
-      { _id: new ObjectId(dvdId) }, 
-      { $set: { title: title } } 
+      { _id: new ObjectId(dvdId) },
+      { $set: { title: title } }
     );
 
-    revalidatePath("/dvds"); 
+    revalidatePath("/dvds");
     return { success: true };
 
   } catch (error) {
@@ -157,10 +157,10 @@ export async function deleteVinylAction(formData: FormData) {
     const db = client.db("neptune-collection");
 
     await db.collection("vinyls").deleteOne({
-      _id: new ObjectId(parsed.data.vinylId) 
+      _id: new ObjectId(parsed.data.vinylId)
     });
 
-    revalidatePath("/vinyls"); 
+    revalidatePath("/vinyls");
     return { success: true };
 
   } catch (error) {
@@ -192,11 +192,11 @@ export async function updateVinylAction(formData: FormData) {
     const { vinylId, artist, title } = parsed.data;
 
     await db.collection("vinyls").updateOne(
-      { _id: new ObjectId(vinylId) }, 
-      { $set: { artist: artist, title: title } } 
+      { _id: new ObjectId(vinylId) },
+      { $set: { artist: artist, title: title } }
     );
 
-    revalidatePath("/vinyls"); 
+    revalidatePath("/vinyls");
     return { success: true };
 
   } catch (error) {

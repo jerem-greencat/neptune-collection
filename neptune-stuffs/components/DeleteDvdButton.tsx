@@ -39,7 +39,7 @@ export default function DeleteDvdButton({ dvdId, title }: DeleteDvdButtonProps) 
         className="text-red-500 hover:text-red-700 text-sm font-medium"
         aria-label={`Supprimer ${title}`}
       >
-        Supprimer 🗑️
+        Supprimer <span className='hidden md:block'>🗑️</span>
       </button>
 
       {isModalOpen && (

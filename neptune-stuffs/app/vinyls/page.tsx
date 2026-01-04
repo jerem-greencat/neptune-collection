@@ -54,7 +54,7 @@ export default async function VinylsPage() {
                   <p className="text-gray-600">{vinyl.title}</p>
                 </div>
 
-                <div className="flex space-x-4"> 
+                <div className="flex flex-col md:flex-row space-x-4"> 
                   <EditVinylButton 
                     vinylId={vinyl._id.toString()}
                     currentArtist={vinyl.artist}

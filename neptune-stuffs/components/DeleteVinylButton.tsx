@@ -40,7 +40,7 @@ export default function DeleteVinylButton({ vinylId, artist, title }: DeleteViny
         className="text-red-500 hover:text-red-700 text-sm font-medium"
         aria-label={`Supprimer ${title} de ${artist}`}
       >
-        Supprimer 🗑️
+        Supprimer <span className='hidden md:block'>🗑️</span>
       </button>
 
       {isModalOpen && (
