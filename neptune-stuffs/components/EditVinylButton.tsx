@@ -37,7 +37,7 @@ export default function EditVinylButton({ vinylId, currentArtist, currentTitle }
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="text-blue-500 hover:text-blue-700 text-sm font-medium"
+        className="flex gap-2 text-blue-500 hover:text-blue-700 text-sm font-medium"
         aria-label={`Modifier ${currentTitle}`}
       >
         Modifier <span className='hidden md:block'>✏️</span>
