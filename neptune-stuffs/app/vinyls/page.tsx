@@ -1,9 +1,10 @@
 import AddVinyl from "@/components/AddVinyl";
 import DeleteVinylButton from "@/components/DeleteVinylButton";
 import EditVinylButton from "@/components/EditVinylButton";
-import ProtectedRoute from "@/components/ProtectedRoot";
 import clientPromise from "@/lib/mongodb";
+import { isSessionValid } from "@/lib/session";
 import { ObjectId } from "mongodb";
+import { redirect } from "next/navigation";
 
 interface Vinyl {
   _id: ObjectId;
@@ -30,49 +31,56 @@ async function getVinyls(): Promise<Vinyl[]> {
   }
 }
 
-
 export default async function VinylsPage() {
+  // Vérification côté serveur : sans session valide, la collection n'est même
+  // pas lue en base et rien n'est envoyé au client.
+  if (!(await isSessionValid())) {
+    redirect("/");
+  }
+
   const vinyls = await getVinyls();
 
   return (
-    <ProtectedRoute>
-      <div className="container mx-auto p-8">
-        <div>
-            <h1 className="text-3xl font-bold mb-6">Ma Collection de Vinyles</h1>
-            <AddVinyl />   
-        </div>
-
-        {vinyls.length > 0 ? (
-          <ul className="space-y-4">
-            {vinyls.map((vinyl) => (
-              <li 
-                key={vinyl._id.toString()} 
-                className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
-              >
-                <div>
-                  <p className="text-xl font-semibold">{vinyl.artist}</p>
-                  <p className="text-gray-600">{vinyl.title}</p>
-                </div>
-
-                <div className="flex flex-col md:flex-row space-x-4"> 
-                  <EditVinylButton 
-                    vinylId={vinyl._id.toString()}
-                    currentArtist={vinyl.artist}
-                    currentTitle={vinyl.title}
-                  />
-                  <DeleteVinylButton 
-                    vinylId={vinyl._id.toString()}
-                    artist={vinyl.artist}
-                    title={vinyl.title}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Aucun vinyle dans votre collection pour le moment.</p>
-        )}
+    <div className="container mx-auto px-4 py-6 sm:p-8">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">
+          Ma Collection de Vinyles
+        </h1>
+        <AddVinyl />
       </div>
-    </ProtectedRoute>
+
+      {vinyls.length > 0 ? (
+        <ul className="space-y-4">
+          {vinyls.map((vinyl) => (
+            <li
+              key={vinyl._id.toString()}
+              className="bg-white p-4 rounded-lg shadow flex justify-between items-center gap-3"
+            >
+              <div className="min-w-0">
+                <p className="text-lg sm:text-xl font-semibold break-words">
+                  {vinyl.artist}
+                </p>
+                <p className="text-gray-600 break-words">{vinyl.title}</p>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-2 md:gap-4 shrink-0">
+                <EditVinylButton
+                  vinylId={vinyl._id.toString()}
+                  currentArtist={vinyl.artist}
+                  currentTitle={vinyl.title}
+                />
+                <DeleteVinylButton
+                  vinylId={vinyl._id.toString()}
+                  artist={vinyl.artist}
+                  title={vinyl.title}
+                />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Aucun vinyle dans votre collection pour le moment.</p>
+      )}
+    </div>
   );
 }

@@ -2,8 +2,15 @@
 
 import { z } from 'zod';
 import clientPromise from '@/lib/mongodb';
+import { createSession, destroySession, isSessionValid } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 import { ObjectId } from 'mongodb';
+
+/** Réponse renvoyée à toute mutation tentée sans session valide. */
+const UNAUTHORIZED = {
+  success: false,
+  error: 'Session expirée, veuillez vous reconnecter.',
+} as const;
 
 export async function loginAction(formData: FormData) {
   const identifiant = formData.get('identifier');
@@ -13,10 +20,16 @@ export async function loginAction(formData: FormData) {
   const correctMotDePasse = process.env.APP_MOT_DE_PASSE;
 
   if (identifiant === correctIdentifiant && motDePasse === correctMotDePasse) {
+    await createSession();
     return { success: true, message: 'Connexion réussie !' };
   } else {
     return { success: false, message: 'Identifiant ou mot de passe incorrect.' };
   }
+}
+
+export async function logoutAction() {
+  await destroySession();
+  return { success: true };
 }
 
 
@@ -30,6 +43,8 @@ const dvdSchema = z.object({
 })
 
 export async function addDvdAction(formData: FormData) {
+  if (!(await isSessionValid())) return UNAUTHORIZED;
+
   const data = Object.fromEntries(formData);
   const parsed = dvdSchema.safeParse(data);
 
@@ -58,6 +73,8 @@ const deleteDvdSchema = z.object({
 });
 
 export async function deleteDvdAction(formData: FormData) {
+  if (!(await isSessionValid())) return UNAUTHORIZED;
+
   const data = Object.fromEntries(formData);
   const parsed = deleteDvdSchema.safeParse(data);
 
@@ -89,6 +106,8 @@ const updateDvdSchema = z.object({
 
 
 export async function updateDvdAction(formData: FormData) {
+  if (!(await isSessionValid())) return UNAUTHORIZED;
+
   const data = Object.fromEntries(formData);
   const parsed = updateDvdSchema.safeParse(data);
 
@@ -118,6 +137,8 @@ export async function updateDvdAction(formData: FormData) {
 }
 
 export async function addVinylAction(formData: FormData) {
+  if (!(await isSessionValid())) return UNAUTHORIZED;
+
   const data = Object.fromEntries(formData);
   const parsed = vinylSchema.safeParse(data);
 
@@ -145,6 +166,8 @@ const deleteVinylSchema = z.object({
 });
 
 export async function deleteVinylAction(formData: FormData) {
+  if (!(await isSessionValid())) return UNAUTHORIZED;
+
   const data = Object.fromEntries(formData);
   const parsed = deleteVinylSchema.safeParse(data);
 
@@ -177,6 +200,8 @@ const updateVinylSchema = z.object({
 });
 
 export async function updateVinylAction(formData: FormData) {
+  if (!(await isSessionValid())) return UNAUTHORIZED;
+
   const data = Object.fromEntries(formData);
   const parsed = updateVinylSchema.safeParse(data);
 

@@ -1,9 +1,10 @@
 import AddDvd from "@/components/AddDvd";
 import DeleteDvdButton from "@/components/DeleteDvdButton";
 import EditDvdButton from "@/components/EditDvdButton";
-import ProtectedRoute from "@/components/ProtectedRoot";
 import clientPromise from "@/lib/mongodb";
+import { isSessionValid } from "@/lib/session";
 import { ObjectId } from "mongodb";
+import { redirect } from "next/navigation";
 
 interface Dvd {
   _id: ObjectId;
@@ -29,46 +30,50 @@ async function getDvds(): Promise<Dvd[]> {
   }
 }
 
-
 export default async function DvdsPage() {
+  // Vérification côté serveur : sans session valide, la collection n'est même
+  // pas lue en base et rien n'est envoyé au client.
+  if (!(await isSessionValid())) {
+    redirect("/");
+  }
+
   const dvds = await getDvds();
 
   return (
-    <ProtectedRoute>
-      <div className="container mx-auto p-8">
-        <div>
-            <h1 className="text-3xl font-bold mb-6">Ma Collection de Dvds</h1>
-            <AddDvd />   
-        </div>
-
-        {dvds.length > 0 ? (
-          <ul className="space-y-4">
-            {dvds.map((dvd) => (
-              <li 
-                key={dvd._id.toString()} 
-                className="bg-white p-4 rounded-lg shadow flex justify-between items-center"
-              >
-                <div>
-                  <p className="text-xl font-semibold">{dvd.title}</p>
-                </div>
-
-                <div className="flex flex-col md:flex-row space-x-4"> 
-                  <EditDvdButton 
-                    dvdId={dvd._id.toString()}
-                    currentTitle={dvd.title}
-                  />
-                  <DeleteDvdButton 
-                    dvdId={dvd._id.toString()}
-                    title={dvd.title}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>Aucun dvd dans votre collection pour le moment.</p>
-        )}
+    <div className="container mx-auto px-4 py-6 sm:p-8">
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">
+          Ma Collection de Dvds
+        </h1>
+        <AddDvd />
       </div>
-    </ProtectedRoute>
+
+      {dvds.length > 0 ? (
+        <ul className="space-y-4">
+          {dvds.map((dvd) => (
+            <li
+              key={dvd._id.toString()}
+              className="bg-white p-4 rounded-lg shadow flex justify-between items-center gap-3"
+            >
+              <div className="min-w-0">
+                <p className="text-lg sm:text-xl font-semibold break-words">
+                  {dvd.title}
+                </p>
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-2 md:gap-4 shrink-0">
+                <EditDvdButton
+                  dvdId={dvd._id.toString()}
+                  currentTitle={dvd.title}
+                />
+                <DeleteDvdButton dvdId={dvd._id.toString()} title={dvd.title} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>Aucun dvd dans votre collection pour le moment.</p>
+      )}
+    </div>
   );
 }
