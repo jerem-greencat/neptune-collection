@@ -1,7 +1,7 @@
 import AddDvd from "@/components/AddDvd";
 import DeleteDvdButton from "@/components/DeleteDvdButton";
 import EditDvdButton from "@/components/EditDvdButton";
-import clientPromise from "@/lib/mongodb";
+import getMongoClient from "@/lib/mongodb";
 import { isSessionValid } from "@/lib/session";
 import type { ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
@@ -13,26 +13,13 @@ interface Dvd {
 }
 
 async function getDvds(): Promise<Dvd[]> {
-	try {
-		const client = await clientPromise;
-		const db = client.db("neptune-collection");
+	const client = await getMongoClient();
+	const db = client.db("neptune-collection");
 
-		const dvdsData = await db
-			.collection<Dvd>("dvds")
-			.find({})
-			.sort({ title: 1 })
-			.toArray();
-
-		return dvdsData;
-	} catch (error) {
-		console.error("Erreur lors de la récupération des dvds:", error);
-		return [];
-	}
+	return db.collection<Dvd>("dvds").find({}).sort({ title: 1 }).toArray();
 }
 
 export default async function DvdsPage() {
-	// Vérification côté serveur : sans session valide, la collection n'est même
-	// pas lue en base et rien n'est envoyé au client.
 	if (!(await isSessionValid())) {
 		redirect("/");
 	}

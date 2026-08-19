@@ -1,7 +1,7 @@
 import AddVinyl from "@/components/AddVinyl";
 import DeleteVinylButton from "@/components/DeleteVinylButton";
 import EditVinylButton from "@/components/EditVinylButton";
-import clientPromise from "@/lib/mongodb";
+import getMongoClient from "@/lib/mongodb";
 import { isSessionValid } from "@/lib/session";
 import type { ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
@@ -14,26 +14,13 @@ interface Vinyl {
 }
 
 async function getVinyls(): Promise<Vinyl[]> {
-	try {
-		const client = await clientPromise;
-		const db = client.db("neptune-collection");
+	const client = await getMongoClient();
+	const db = client.db("neptune-collection");
 
-		const vinylsData = await db
-			.collection<Vinyl>("vinyls")
-			.find({})
-			.sort({ artist: 1 })
-			.toArray();
-
-		return vinylsData;
-	} catch (error) {
-		console.error("Erreur lors de la récupération des vinyles:", error);
-		return [];
-	}
+	return db.collection<Vinyl>("vinyls").find({}).sort({ artist: 1 }).toArray();
 }
 
 export default async function VinylsPage() {
-	// Vérification côté serveur : sans session valide, la collection n'est même
-	// pas lue en base et rien n'est envoyé au client.
 	if (!(await isSessionValid())) {
 		redirect("/");
 	}
