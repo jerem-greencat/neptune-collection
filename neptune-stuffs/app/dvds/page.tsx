@@ -1,9 +1,10 @@
 import AddDvd from "@/components/AddDvd";
 import DeleteDvdButton from "@/components/DeleteDvdButton";
 import EditDvdButton from "@/components/EditDvdButton";
-import getMongoClient from "@/lib/mongodb";
+import SearchBar from "@/components/SearchBar";
+import getMongoClient, { buildSearchRegex } from "@/lib/mongodb";
 import { isSessionValid } from "@/lib/session";
-import type { ObjectId } from "mongodb";
+import type { Filter, ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
 
 interface Dvd {
@@ -12,19 +13,28 @@ interface Dvd {
 	// year: number;
 }
 
-async function getDvds(): Promise<Dvd[]> {
+async function getDvds(query: string): Promise<Dvd[]> {
 	const client = await getMongoClient();
 	const db = client.db("neptune-collection");
 
-	return db.collection<Dvd>("dvds").find({}).sort({ title: 1 }).toArray();
+	const filter: Filter<Dvd> = query
+		? { title: { $regex: buildSearchRegex(query) } }
+		: {};
+
+	return db.collection<Dvd>("dvds").find(filter).sort({ title: 1 }).toArray();
 }
 
-export default async function DvdsPage() {
+export default async function DvdsPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ q?: string }>;
+}) {
 	if (!(await isSessionValid())) {
 		redirect("/");
 	}
 
-	const dvds = await getDvds();
+	const query = (await searchParams).q?.trim() ?? "";
+	const dvds = await getDvds(query);
 
 	return (
 		<div className="container mx-auto px-4 py-6 sm:p-8">
@@ -34,6 +44,8 @@ export default async function DvdsPage() {
 				</h1>
 				<AddDvd />
 			</div>
+
+			<SearchBar placeholder="Rechercher un dvd par titre..." />
 
 			{dvds.length > 0 ? (
 				<ul className="space-y-4">
@@ -58,6 +70,8 @@ export default async function DvdsPage() {
 						</li>
 					))}
 				</ul>
+			) : query ? (
+				<p>Aucun dvd ne correspond à « {query} ».</p>
 			) : (
 				<p>Aucun dvd dans votre collection pour le moment.</p>
 			)}

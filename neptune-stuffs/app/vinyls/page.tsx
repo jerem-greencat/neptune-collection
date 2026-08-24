@@ -1,9 +1,10 @@
 import AddVinyl from "@/components/AddVinyl";
 import DeleteVinylButton from "@/components/DeleteVinylButton";
 import EditVinylButton from "@/components/EditVinylButton";
-import getMongoClient from "@/lib/mongodb";
+import SearchBar from "@/components/SearchBar";
+import getMongoClient, { buildSearchRegex } from "@/lib/mongodb";
 import { isSessionValid } from "@/lib/session";
-import type { ObjectId } from "mongodb";
+import type { Filter, ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
 
 interface Vinyl {
@@ -13,19 +14,37 @@ interface Vinyl {
 	// year: number;
 }
 
-async function getVinyls(): Promise<Vinyl[]> {
+async function getVinyls(query: string): Promise<Vinyl[]> {
 	const client = await getMongoClient();
 	const db = client.db("neptune-collection");
 
-	return db.collection<Vinyl>("vinyls").find({}).sort({ artist: 1 }).toArray();
+	let filter: Filter<Vinyl> = {};
+
+	if (query) {
+		const regex = buildSearchRegex(query);
+		filter = {
+			$or: [{ title: { $regex: regex } }, { artist: { $regex: regex } }],
+		};
+	}
+
+	return db
+		.collection<Vinyl>("vinyls")
+		.find(filter)
+		.sort({ artist: 1 })
+		.toArray();
 }
 
-export default async function VinylsPage() {
+export default async function VinylsPage({
+	searchParams,
+}: {
+	searchParams: Promise<{ q?: string }>;
+}) {
 	if (!(await isSessionValid())) {
 		redirect("/");
 	}
 
-	const vinyls = await getVinyls();
+	const query = (await searchParams).q?.trim() ?? "";
+	const vinyls = await getVinyls(query);
 
 	return (
 		<div className="container mx-auto px-4 py-6 sm:p-8">
@@ -35,6 +54,8 @@ export default async function VinylsPage() {
 				</h1>
 				<AddVinyl />
 			</div>
+
+			<SearchBar placeholder="Rechercher par titre ou artiste..." />
 
 			{vinyls.length > 0 ? (
 				<ul className="space-y-4">
@@ -65,6 +86,8 @@ export default async function VinylsPage() {
 						</li>
 					))}
 				</ul>
+			) : query ? (
+				<p>Aucun vinyle ne correspond à « {query} ».</p>
 			) : (
 				<p>Aucun vinyle dans votre collection pour le moment.</p>
 			)}

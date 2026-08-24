@@ -40,6 +40,12 @@ export default function getMongoClient(): Promise<MongoClient> {
 	return globalWithMongo._mongoClientPromise;
 }
 
+export function buildSearchRegex(query: string): RegExp {
+	const escaped = query.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+	return new RegExp(escaped, "i");
+}
+
 export function isDatabaseUnreachable(error: unknown): boolean {
 	return (
 		error instanceof MongoServerSelectionError ||
