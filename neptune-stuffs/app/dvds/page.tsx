@@ -16,6 +16,7 @@ interface DvdDocument {
 	_id: ObjectId;
 	title: string;
 	barcode?: string;
+	year?: number;
 	// year: number;
 }
 
@@ -23,6 +24,7 @@ interface Dvd {
 	id: string;
 	title: string;
 	barcode?: string;
+	year?: number;
 }
 
 const getDvds = unstable_cache(
@@ -45,6 +47,7 @@ const getDvds = unstable_cache(
 			id: dvd._id.toString(),
 			title: dvd.title,
 			barcode: dvd.barcode,
+			year: dvd.year,
 		}));
 	},
 	["dvds-list"],
@@ -84,6 +87,11 @@ export default async function DvdsPage({
 							<div className="min-w-0">
 								<p className="text-lg sm:text-xl font-semibold break-words">
 									{dvd.title}
+									{dvd.year ? (
+										<span className="ml-2 text-sm font-normal text-gray-500">
+											{dvd.year}
+										</span>
+									) : null}
 								</p>
 							</div>
 

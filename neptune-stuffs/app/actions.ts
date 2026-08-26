@@ -7,6 +7,7 @@ import {
 	normalizeBarcode,
 	type ReleaseMetadata,
 } from "@/lib/discogs";
+import { type MovieSummary, searchMovies, TmdbError } from "@/lib/tmdb";
 import getMongoClient, {
 	describeDatabaseError,
 	DVDS_CACHE_TAG,
@@ -53,9 +54,17 @@ const vinylSchema = z.object({
 	barcode: barcodeField,
 });
 
+/** Champs issus de TMDB : absents si le dvd est saisi entièrement à la main. */
+const tmdbFields = {
+	year: z.coerce.number().int().min(1880).max(2200).optional(),
+	tmdbId: z.coerce.number().int().positive().optional(),
+	posterUrl: z.string().url().optional(),
+};
+
 const dvdSchema = z.object({
 	title: z.string().min(1, "Le titre du dvd est requis."),
 	barcode: barcodeField,
+	...tmdbFields,
 });
 
 function barcodeFields(raw: string | undefined): { barcode?: string } {
@@ -89,9 +98,14 @@ export async function addDvdAction(formData: FormData) {
 		const client = await getMongoClient();
 		const db = client.db("neptune-collection");
 
+		const { title, barcode, year, tmdbId, posterUrl } = parsed.data;
+
 		await db.collection("dvds").insertOne({
-			title: parsed.data.title,
-			...barcodeFields(parsed.data.barcode),
+			title,
+			...barcodeFields(barcode),
+			...(year ? { year } : {}),
+			...(tmdbId ? { tmdbId } : {}),
+			...(posterUrl ? { posterUrl } : {}),
 		});
 
 		updateTag(DVDS_CACHE_TAG);
@@ -364,5 +378,39 @@ export async function findDvdByBarcodeAction(
 	} catch (error) {
 		console.error("Erreur lors de la recherche du code-barres:", error);
 		return { success: false, error: describeDatabaseError(error) };
+	}
+}
+
+export interface MovieSearchResult {
+	success: boolean;
+	error?: string;
+	movies?: MovieSummary[];
+}
+
+/**
+ * Recherche un film par titre sur TMDB. Contrairement aux bases de
+ * codes-barres, elle rend un titre de sortie propre, l'année et l'affiche.
+ */
+export async function searchMoviesAction(
+	query: string,
+): Promise<MovieSearchResult> {
+	if (!(await isSessionValid())) return UNAUTHORIZED;
+
+	if (!query.trim()) {
+		return { success: true, movies: [] };
+	}
+
+	try {
+		return { success: true, movies: await searchMovies(query) };
+	} catch (error) {
+		console.error("Erreur TMDB:", error);
+
+		return {
+			success: false,
+			error:
+				error instanceof TmdbError
+					? error.message
+					: "La recherche TMDB a échoué.",
+		};
 	}
 }
