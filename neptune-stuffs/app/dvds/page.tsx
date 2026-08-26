@@ -2,7 +2,10 @@ import AddDvd from "@/components/AddDvd";
 import DeleteDvdButton from "@/components/DeleteDvdButton";
 import EditDvdButton from "@/components/EditDvdButton";
 import SearchBar from "@/components/SearchBar";
-import getMongoClient, { buildSearchRegex } from "@/lib/mongodb";
+import getMongoClient, {
+	buildSearchRegex,
+	FRENCH_COLLATION,
+} from "@/lib/mongodb";
 import { isSessionValid } from "@/lib/session";
 import type { Filter, ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
@@ -21,7 +24,12 @@ async function getDvds(query: string): Promise<Dvd[]> {
 		? { title: { $regex: buildSearchRegex(query) } }
 		: {};
 
-	return db.collection<Dvd>("dvds").find(filter).sort({ title: 1 }).toArray();
+	return db
+		.collection<Dvd>("dvds")
+		.find(filter)
+		.collation(FRENCH_COLLATION)
+		.sort({ title: 1 })
+		.toArray();
 }
 
 export default async function DvdsPage({

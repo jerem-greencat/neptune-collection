@@ -2,7 +2,10 @@ import AddVinyl from "@/components/AddVinyl";
 import DeleteVinylButton from "@/components/DeleteVinylButton";
 import EditVinylButton from "@/components/EditVinylButton";
 import SearchBar from "@/components/SearchBar";
-import getMongoClient, { buildSearchRegex } from "@/lib/mongodb";
+import getMongoClient, {
+	buildSearchRegex,
+	FRENCH_COLLATION,
+} from "@/lib/mongodb";
 import { isSessionValid } from "@/lib/session";
 import type { Filter, ObjectId } from "mongodb";
 import { redirect } from "next/navigation";
@@ -30,7 +33,8 @@ async function getVinyls(query: string): Promise<Vinyl[]> {
 	return db
 		.collection<Vinyl>("vinyls")
 		.find(filter)
-		.sort({ artist: 1 })
+		.collation(FRENCH_COLLATION)
+		.sort({ artist: 1, title: 1 })
 		.toArray();
 }
 
