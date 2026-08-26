@@ -1,6 +1,12 @@
 "use server";
 
 import { z } from "zod";
+import {
+	DiscogsError,
+	lookupBarcode,
+	normalizeBarcode,
+	type ReleaseMetadata,
+} from "@/lib/discogs";
 import getMongoClient, {
 	describeDatabaseError,
 	DVDS_CACHE_TAG,
@@ -38,14 +44,36 @@ export async function logoutAction() {
 	return { success: true };
 }
 
+/** Facultatif : un disque saisi à la main n'a pas forcément de code-barres. */
+const barcodeField = z.string().optional();
+
 const vinylSchema = z.object({
 	artist: z.string().min(1, "Le nom de l'artiste est requis."),
 	title: z.string().min(1, "Le titre est requis."),
+	barcode: barcodeField,
 });
 
 const dvdSchema = z.object({
 	title: z.string().min(1, "Le titre du dvd est requis."),
+	barcode: barcodeField,
 });
+
+function barcodeFields(raw: string | undefined): { barcode?: string } {
+	const barcode = normalizeBarcode(raw ?? "");
+
+	return barcode ? { barcode } : {};
+}
+
+function buildUpdate(
+	fields: Record<string, string>,
+	rawBarcode: string | undefined,
+) {
+	const barcode = normalizeBarcode(rawBarcode ?? "");
+
+	return barcode
+		? { $set: { ...fields, barcode } }
+		: { $set: fields, $unset: { barcode: "" } };
+}
 
 export async function addDvdAction(formData: FormData) {
 	if (!(await isSessionValid())) return UNAUTHORIZED;
@@ -61,7 +89,10 @@ export async function addDvdAction(formData: FormData) {
 		const client = await getMongoClient();
 		const db = client.db("neptune-collection");
 
-		await db.collection("dvds").insertOne(parsed.data);
+		await db.collection("dvds").insertOne({
+			title: parsed.data.title,
+			...barcodeFields(parsed.data.barcode),
+		});
 
 		updateTag(DVDS_CACHE_TAG);
 		revalidatePath("/dvds");
@@ -104,8 +135,9 @@ export async function deleteDvdAction(formData: FormData) {
 }
 
 const updateDvdSchema = z.object({
-	dvdId: z.string().min(1, "L'ID du vinyle est requis."),
+	dvdId: z.string().min(1, "L'ID du dvd est requis."),
 	title: z.string().min(1, "Le titre est requis."),
+	barcode: barcodeField,
 });
 
 export async function updateDvdAction(formData: FormData) {
@@ -125,11 +157,11 @@ export async function updateDvdAction(formData: FormData) {
 		const client = await getMongoClient();
 		const db = client.db("neptune-collection");
 
-		const { dvdId, title } = parsed.data;
+		const { dvdId, title, barcode } = parsed.data;
 
 		await db
 			.collection("dvds")
-			.updateOne({ _id: new ObjectId(dvdId) }, { $set: { title: title } });
+			.updateOne({ _id: new ObjectId(dvdId) }, buildUpdate({ title }, barcode));
 
 		updateTag(DVDS_CACHE_TAG);
 		revalidatePath("/dvds");
@@ -154,7 +186,11 @@ export async function addVinylAction(formData: FormData) {
 		const client = await getMongoClient();
 		const db = client.db("neptune-collection");
 
-		await db.collection("vinyls").insertOne(parsed.data);
+		await db.collection("vinyls").insertOne({
+			artist: parsed.data.artist,
+			title: parsed.data.title,
+			...barcodeFields(parsed.data.barcode),
+		});
 
 		updateTag(VINYLS_CACHE_TAG);
 		revalidatePath("/vinyls");
@@ -200,6 +236,7 @@ const updateVinylSchema = z.object({
 	vinylId: z.string().min(1, "L'ID du vinyle est requis."),
 	artist: z.string().min(1, "Le nom de l'artiste est requis."),
 	title: z.string().min(1, "Le titre est requis."),
+	barcode: barcodeField,
 });
 
 export async function updateVinylAction(formData: FormData) {
@@ -219,13 +256,13 @@ export async function updateVinylAction(formData: FormData) {
 		const client = await getMongoClient();
 		const db = client.db("neptune-collection");
 
-		const { vinylId, artist, title } = parsed.data;
+		const { vinylId, artist, title, barcode } = parsed.data;
 
 		await db
 			.collection("vinyls")
 			.updateOne(
 				{ _id: new ObjectId(vinylId) },
-				{ $set: { artist: artist, title: title } },
+				buildUpdate({ artist, title }, barcode),
 			);
 
 		updateTag(VINYLS_CACHE_TAG);
@@ -233,6 +270,99 @@ export async function updateVinylAction(formData: FormData) {
 		return { success: true };
 	} catch (error) {
 		console.error("Erreur lors de la mise à jour du vinyle:", error);
+		return { success: false, error: describeDatabaseError(error) };
+	}
+}
+
+export interface BarcodeLookupResult {
+	success: boolean;
+	error?: string;
+	alreadyOwned?: { id: string; label: string } | null;
+	metadata?: ReleaseMetadata | null;
+}
+
+async function findByBarcode(
+	collection: "vinyls" | "dvds",
+	barcode: string,
+): Promise<{ id: string; label: string } | null> {
+	const client = await getMongoClient();
+	const db = client.db("neptune-collection");
+
+	const existing = await db
+		.collection<{ _id: ObjectId; artist?: string; title: string }>(collection)
+		.findOne({ barcode });
+
+	if (!existing) {
+		return null;
+	}
+
+	return {
+		id: existing._id.toString(),
+		label: existing.artist
+			? `${existing.artist} — ${existing.title}`
+			: existing.title,
+	};
+}
+
+export async function lookupVinylBarcodeAction(
+	rawBarcode: string,
+): Promise<BarcodeLookupResult> {
+	if (!(await isSessionValid())) return UNAUTHORIZED;
+
+	const barcode = normalizeBarcode(rawBarcode);
+
+	if (!barcode) {
+		return { success: false, error: "Saisissez un code-barres." };
+	}
+
+	let alreadyOwned: { id: string; label: string } | null = null;
+
+	try {
+		alreadyOwned = await findByBarcode("vinyls", barcode);
+	} catch (error) {
+		console.error("Erreur lors de la recherche du code-barres:", error);
+		return { success: false, error: describeDatabaseError(error) };
+	}
+
+	try {
+		const metadata = await lookupBarcode(barcode);
+		return { success: true, alreadyOwned, metadata };
+	} catch (error) {
+		console.error("Erreur Discogs:", error);
+
+		return {
+			success: false,
+			alreadyOwned,
+			error:
+				error instanceof DiscogsError
+					? error.message
+					: "La recherche Discogs a échoué.",
+		};
+	}
+}
+
+/**
+ * Les DVD n'ont pas d'équivalent Discogs exploitable : le code-barres sert
+ * uniquement à repérer un disque déjà présent dans la collection.
+ */
+export async function findDvdByBarcodeAction(
+	rawBarcode: string,
+): Promise<BarcodeLookupResult> {
+	if (!(await isSessionValid())) return UNAUTHORIZED;
+
+	const barcode = normalizeBarcode(rawBarcode);
+
+	if (!barcode) {
+		return { success: false, error: "Saisissez un code-barres." };
+	}
+
+	try {
+		return {
+			success: true,
+			alreadyOwned: await findByBarcode("dvds", barcode),
+		};
+	} catch (error) {
+		console.error("Erreur lors de la recherche du code-barres:", error);
 		return { success: false, error: describeDatabaseError(error) };
 	}
 }

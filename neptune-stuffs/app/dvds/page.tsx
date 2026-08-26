@@ -15,12 +15,14 @@ import { redirect } from "next/navigation";
 interface DvdDocument {
 	_id: ObjectId;
 	title: string;
+	barcode?: string;
 	// year: number;
 }
 
 interface Dvd {
 	id: string;
 	title: string;
+	barcode?: string;
 }
 
 const getDvds = unstable_cache(
@@ -39,7 +41,11 @@ const getDvds = unstable_cache(
 			.sort({ title: 1 })
 			.toArray();
 
-		return dvds.map((dvd) => ({ id: dvd._id.toString(), title: dvd.title }));
+		return dvds.map((dvd) => ({
+			id: dvd._id.toString(),
+			title: dvd.title,
+			barcode: dvd.barcode,
+		}));
 	},
 	["dvds-list"],
 	{ tags: [DVDS_CACHE_TAG], revalidate: 300 },
@@ -82,7 +88,11 @@ export default async function DvdsPage({
 							</div>
 
 							<div className="flex flex-col md:flex-row gap-2 md:gap-4 shrink-0">
-								<EditDvdButton dvdId={dvd.id} currentTitle={dvd.title} />
+								<EditDvdButton
+									dvdId={dvd.id}
+									currentTitle={dvd.title}
+									currentBarcode={dvd.barcode}
+								/>
 								<DeleteDvdButton dvdId={dvd.id} title={dvd.title} />
 							</div>
 						</li>
