@@ -5,38 +5,56 @@ import SearchBar from "@/components/SearchBar";
 import getMongoClient, {
 	buildSearchRegex,
 	FRENCH_COLLATION,
+	VINYLS_CACHE_TAG,
 } from "@/lib/mongodb";
 import { isSessionValid } from "@/lib/session";
 import type { Filter, ObjectId } from "mongodb";
+import { unstable_cache } from "next/cache";
 import { redirect } from "next/navigation";
 
-interface Vinyl {
+interface VinylDocument {
 	_id: ObjectId;
 	artist: string;
 	title: string;
 	// year: number;
 }
 
-async function getVinyls(query: string): Promise<Vinyl[]> {
-	const client = await getMongoClient();
-	const db = client.db("neptune-collection");
-
-	let filter: Filter<Vinyl> = {};
-
-	if (query) {
-		const regex = buildSearchRegex(query);
-		filter = {
-			$or: [{ title: { $regex: regex } }, { artist: { $regex: regex } }],
-		};
-	}
-
-	return db
-		.collection<Vinyl>("vinyls")
-		.find(filter)
-		.collation(FRENCH_COLLATION)
-		.sort({ artist: 1, title: 1 })
-		.toArray();
+interface Vinyl {
+	id: string;
+	artist: string;
+	title: string;
 }
+
+const getVinyls = unstable_cache(
+	async (query: string): Promise<Vinyl[]> => {
+		const client = await getMongoClient();
+		const db = client.db("neptune-collection");
+
+		let filter: Filter<VinylDocument> = {};
+
+		if (query) {
+			const regex = buildSearchRegex(query);
+			filter = {
+				$or: [{ title: { $regex: regex } }, { artist: { $regex: regex } }],
+			};
+		}
+
+		const vinyls = await db
+			.collection<VinylDocument>("vinyls")
+			.find(filter)
+			.collation(FRENCH_COLLATION)
+			.sort({ artist: 1, title: 1 })
+			.toArray();
+
+		return vinyls.map((vinyl) => ({
+			id: vinyl._id.toString(),
+			artist: vinyl.artist,
+			title: vinyl.title,
+		}));
+	},
+	["vinyls-list"],
+	{ tags: [VINYLS_CACHE_TAG], revalidate: 300 },
+);
 
 export default async function VinylsPage({
 	searchParams,
@@ -65,7 +83,7 @@ export default async function VinylsPage({
 				<ul className="space-y-4">
 					{vinyls.map((vinyl) => (
 						<li
-							key={vinyl._id.toString()}
+							key={vinyl.id}
 							className="bg-white p-4 rounded-lg shadow flex justify-between items-center gap-3"
 						>
 							<div className="min-w-0">
@@ -77,12 +95,12 @@ export default async function VinylsPage({
 
 							<div className="flex flex-col md:flex-row gap-2 md:gap-4 shrink-0">
 								<EditVinylButton
-									vinylId={vinyl._id.toString()}
+									vinylId={vinyl.id}
 									currentArtist={vinyl.artist}
 									currentTitle={vinyl.title}
 								/>
 								<DeleteVinylButton
-									vinylId={vinyl._id.toString()}
+									vinylId={vinyl.id}
 									artist={vinyl.artist}
 									title={vinyl.title}
 								/>

@@ -40,8 +40,9 @@ export default function getMongoClient(): Promise<MongoClient> {
 	return globalWithMongo._mongoClientPromise;
 }
 
-// Sans collation, MongoDB trie en binaire : les majuscules passent avant les
-// minuscules et les accents se retrouvent en fin de liste.
+export const DVDS_CACHE_TAG = "dvds";
+export const VINYLS_CACHE_TAG = "vinyls";
+
 export const FRENCH_COLLATION = { locale: "fr", strength: 1 } as const;
 
 export function buildSearchRegex(query: string): RegExp {

@@ -1,9 +1,13 @@
 "use server";
 
 import { z } from "zod";
-import getMongoClient, { describeDatabaseError } from "@/lib/mongodb";
+import getMongoClient, {
+	describeDatabaseError,
+	DVDS_CACHE_TAG,
+	VINYLS_CACHE_TAG,
+} from "@/lib/mongodb";
 import { createSession, destroySession, isSessionValid } from "@/lib/session";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { ObjectId } from "mongodb";
 
 const UNAUTHORIZED = {
@@ -59,6 +63,7 @@ export async function addDvdAction(formData: FormData) {
 
 		await db.collection("dvds").insertOne(parsed.data);
 
+		updateTag(DVDS_CACHE_TAG);
 		revalidatePath("/dvds");
 		return { success: true };
 	} catch (error) {
@@ -89,6 +94,7 @@ export async function deleteDvdAction(formData: FormData) {
 			_id: new ObjectId(parsed.data.dvdId),
 		});
 
+		updateTag(DVDS_CACHE_TAG);
 		revalidatePath("/dvds");
 		return { success: true };
 	} catch (error) {
@@ -125,6 +131,7 @@ export async function updateDvdAction(formData: FormData) {
 			.collection("dvds")
 			.updateOne({ _id: new ObjectId(dvdId) }, { $set: { title: title } });
 
+		updateTag(DVDS_CACHE_TAG);
 		revalidatePath("/dvds");
 		return { success: true };
 	} catch (error) {
@@ -149,6 +156,7 @@ export async function addVinylAction(formData: FormData) {
 
 		await db.collection("vinyls").insertOne(parsed.data);
 
+		updateTag(VINYLS_CACHE_TAG);
 		revalidatePath("/vinyls");
 		return { success: true };
 	} catch (error) {
@@ -179,6 +187,7 @@ export async function deleteVinylAction(formData: FormData) {
 			_id: new ObjectId(parsed.data.vinylId),
 		});
 
+		updateTag(VINYLS_CACHE_TAG);
 		revalidatePath("/vinyls");
 		return { success: true };
 	} catch (error) {
@@ -219,6 +228,7 @@ export async function updateVinylAction(formData: FormData) {
 				{ $set: { artist: artist, title: title } },
 			);
 
+		updateTag(VINYLS_CACHE_TAG);
 		revalidatePath("/vinyls");
 		return { success: true };
 	} catch (error) {
