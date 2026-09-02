@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { Disc3, Film, LogIn, LogOut, Menu, X } from 'lucide-react';
-import Image from 'next/image';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import LoginModal from './LoginModal';
+import { Disc3, Film, LogIn, LogOut, Menu, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import LoginModal from "./LoginModal";
 
 const NAV_LINKS = [
-  { href: '/vinyls', label: 'Vinyles', Icon: Disc3 },
-  { href: '/dvds', label: 'DVDs', Icon: Film },
+  { href: "/vinyls", label: "Vinyles", Icon: Disc3 },
+  { href: "/dvds", label: "DVDs", Icon: Film },
 ] as const;
 
 export default function Navbar() {
@@ -59,11 +59,11 @@ export default function Navbar() {
                 <Link
                   key={href}
                   href={href}
-                  aria-current={isActive ? 'page' : undefined}
+                  aria-current={isActive ? "page" : undefined}
                   className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 ${
                     isActive
-                      ? 'bg-indigo-50 text-indigo-700'
-                      : 'text-gray-700 hover:bg-gray-100'
+                      ? "bg-indigo-50 text-indigo-700"
+                      : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
                   <Icon size={18} aria-hidden="true" />
@@ -99,7 +99,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setMenuOpenedOn(isMenuOpen ? null : pathname)}
-              aria-label={isMenuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+              aria-label={isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
               aria-expanded={isMenuOpen}
               aria-controls="mobile-menu"
               className="md:hidden flex items-center justify-center h-12 w-12 rounded-lg text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors duration-300"
@@ -132,11 +132,11 @@ export default function Navbar() {
                     key={href}
                     href={href}
                     onClick={closeMenu}
-                    aria-current={isActive ? 'page' : undefined}
+                    aria-current={isActive ? "page" : undefined}
                     className={`flex items-center gap-3 min-h-12 px-4 py-3 rounded-lg text-base font-medium transition-colors duration-300 ${
                       isActive
-                        ? 'bg-indigo-50 text-indigo-700'
-                        : 'text-gray-700 hover:bg-gray-100 active:bg-gray-200'
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "text-gray-700 hover:bg-gray-100 active:bg-gray-200"
                     }`}
                   >
                     <Icon size={20} aria-hidden="true" />

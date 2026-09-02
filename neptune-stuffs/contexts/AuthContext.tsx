@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { createContext, useState, useContext, type ReactNode } from 'react';
-import { logoutAction } from '@/app/actions';
+import { useRouter } from "next/navigation";
+import { createContext, type ReactNode, useContext, useState } from "react";
+import { logoutAction } from "@/app/actions/auth";
 
 interface AuthContextType {
   isUserLoggedIn: boolean;
@@ -49,7 +49,9 @@ export function AuthProvider({
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth doit être utilisé à l\'intérieur d\'un AuthProvider');
+    throw new Error(
+      "useAuth doit être utilisé à l'intérieur d'un AuthProvider",
+    );
   }
   return context;
 }

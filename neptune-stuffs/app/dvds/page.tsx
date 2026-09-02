@@ -1,63 +1,10 @@
+import { redirect } from "next/navigation";
 import AddDvd from "@/components/AddDvd";
 import DeleteDvdButton from "@/components/DeleteDvdButton";
 import EditDvdButton from "@/components/EditDvdButton";
 import SearchBar from "@/components/SearchBar";
-import getMongoClient, {
-  buildSearchRegex,
-  DVDS_CACHE_TAG,
-  FRENCH_COLLATION,
-} from "@/lib/mongodb";
+import { getDvds } from "@/lib/collections/dvds";
 import { isSessionValid } from "@/lib/session";
-import type { Filter, ObjectId } from "mongodb";
-import { unstable_cache } from "next/cache";
-import { redirect } from "next/navigation";
-
-interface DvdDocument {
-  _id: ObjectId;
-  title: string;
-  barcode?: string;
-  year?: number;
-  directors?: string;
-  kind?: string;
-}
-
-interface Dvd {
-  id: string;
-  title: string;
-  barcode?: string;
-  year?: number;
-  directors?: string;
-  kind?: string;
-}
-
-const getDvds = unstable_cache(
-  async (query: string): Promise<Dvd[]> => {
-    const client = await getMongoClient();
-    const db = client.db("neptune-collection");
-
-    const filter: Filter<DvdDocument> = query
-      ? { title: { $regex: buildSearchRegex(query) } }
-      : {};
-
-    const dvds = await db
-      .collection<DvdDocument>("dvds")
-      .find(filter)
-      .collation(FRENCH_COLLATION)
-      .sort({ title: 1 })
-      .toArray();
-
-    return dvds.map((dvd) => ({
-      id: dvd._id.toString(),
-      title: dvd.title,
-      barcode: dvd.barcode,
-      year: dvd.year,
-      directors: dvd.directors,
-      kind: dvd.kind,
-    }));
-  },
-  ["dvds-list"],
-  { tags: [DVDS_CACHE_TAG], revalidate: 300 },
-);
 
 export default async function DvdsPage({
   searchParams,
