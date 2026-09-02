@@ -1,5 +1,8 @@
 const SPARQL_ENDPOINT = "https://query.wikidata.org/sparql";
-const TIMEOUT_MS = 15000;
+// 20 s : l'endpoint public est très variable. La même recherche mesurée à
+// 1,4 s peut prendre 11 s quelques minutes plus tard, sans que la requête
+// change. Mieux vaut attendre qu'échouer alors que la réponse arrivait.
+const TIMEOUT_MS = 20000;
 
 /** Wikidata exige un User-Agent identifiable et bloque les requêtes anonymes. */
 const USER_AGENT = "NeptuneCollects/0.1";
@@ -47,26 +50,39 @@ function escapeSparqlString(value: string): string {
  *
  * Quatre points méritent explication, tous tirés d'un usage réel :
  *
- * - Le `VALUES ?class` couvre film ET série : une série télévisée n'est pas
- *   une sous-classe de film, elle était donc invisible. Le `P279*` sous chaque
- *   classe rattrape documentaires, films d'animation, téléfilms et séries
- *   d'animation.
+ * - Le `VALUES ?class` couvre film, série ET saison : une série télévisée
+ *   n'est pas une sous-classe de film, et une saison n'est pas une sous-classe
+ *   de série. Le `P279*` sous chaque classe rattrape documentaires, films
+ *   d'animation, téléfilms et séries d'animation.
+ * - Le tri met les œuvres avant les saisons, puis va du plus ancien au plus
+ *   récent. Une série longue ne peut donc pas évincer sa propre fiche de la
+ *   liste, et les saisons sortent dans l'ordre — chronologique et numérique à
+ *   la fois.
+ * - Les deux limites sont hautes à dessein. Les fiches de saison sont mal
+ *   classées par la recherche : pour Supernatural elles occupent les rangs 20
+ *   à 48, donc plafonner les candidats à 30 en perdait la moitié. Et une série
+ *   de 15 saisons a besoin de place dans le résultat final.
  * - `COALESCE` sur les dates : les séries n'ont pas de date de publication mais
  *   une date de début de diffusion. L'ordre compte — prendre la date de
  *   création en premier daterait un film à son début de tournage.
  * - Le générique retombe sur le créateur (P170) quand il n'y a pas de
- *   réalisateur (P57), ce qui est le cas courant des séries.
- * - Le titre retombe sur celui de l'article Wikipédia : certaines fiches, dont
- *   « Friends », n'ont aucun libellé en français ni en anglais alors que les
- *   articles existent.
+ *   réalisateur (P57), ce qui est le cas courant des séries, puis sur le
+ *   créateur de la série parente (P179) : une fiche de saison ne porte
+ *   généralement aucun générique.
+ * - Le service de libellés couvre plusieurs langues : certaines fiches, dont
+ *   « Friends », n'ont aucun libellé français ni anglais. Passer par le titre
+ *   de l'article Wikipédia donnait un français plus sûr, mais coûtait deux
+ *   jointures par ligne et faisait grimper la requête à sept secondes sur une
+ *   série longue — trop près du délai d'attente pour un endpoint aussi
+ *   variable.
  */
 function buildQuery(search: string): string {
   return `SELECT ?item ?itemLabel
+  (MAX(?seasonFlag) AS ?isSeason)
   (MIN(?anyYear) AS ?year)
-  (SAMPLE(?frName) AS ?frTitle)
-  (SAMPLE(?enName) AS ?enTitle)
   (GROUP_CONCAT(DISTINCT ?dirLabel; separator=", ") AS ?directors)
   (GROUP_CONCAT(DISTINCT ?creatorLabel; separator=", ") AS ?creators)
+  (GROUP_CONCAT(DISTINCT ?parentCreatorLabel; separator=", ") AS ?parentCreators)
   (SAMPLE(?kindLabel) AS ?kind)
   (SAMPLE(?imdb) AS ?imdbId)
 WHERE {
@@ -75,11 +91,12 @@ WHERE {
     bd:serviceParam wikibase:endpoint "www.wikidata.org" .
     bd:serviceParam mwapi:search "${escapeSparqlString(search)}" .
     bd:serviceParam mwapi:language "fr" .
-    bd:serviceParam mwapi:limit "15" .
+    bd:serviceParam mwapi:limit "50" .
     ?item wikibase:apiOutputItem mwapi:item .
   }
-  VALUES ?class { wd:Q11424 wd:Q5398426 wd:Q15416 wd:Q1259759 }
+  VALUES ?class { wd:Q11424 wd:Q5398426 wd:Q15416 wd:Q1259759 wd:Q3464665 }
   ?item wdt:P31/wdt:P279* ?class .
+  BIND(IF(?class = wd:Q3464665, 1, 0) AS ?seasonFlag)
   OPTIONAL {
     ?item wdt:P31 ?kind .
     ?kind rdfs:label ?kindLabel .
@@ -99,22 +116,18 @@ WHERE {
     ?creator rdfs:label ?creatorLabel .
     FILTER(LANG(?creatorLabel) = "fr")
   }
+  OPTIONAL {
+    ?item wdt:P179 ?parentSeries .
+    ?parentSeries wdt:P170 ?parentCreator .
+    ?parentCreator rdfs:label ?parentCreatorLabel .
+    FILTER(LANG(?parentCreatorLabel) = "fr")
+  }
   OPTIONAL { ?item wdt:P345 ?imdb }
-  OPTIONAL {
-    ?frArticle schema:about ?item ;
-      schema:isPartOf <https://fr.wikipedia.org/> ;
-      schema:name ?frName .
-  }
-  OPTIONAL {
-    ?enArticle schema:about ?item ;
-      schema:isPartOf <https://en.wikipedia.org/> ;
-      schema:name ?enName .
-  }
-  SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en". }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "fr,en,es,it,pt,nl,de". }
 }
 GROUP BY ?item ?itemLabel
-ORDER BY DESC(?year)
-LIMIT 12`;
+ORDER BY ?isSeason ?year
+LIMIT 25`;
 }
 
 interface SparqlResponse {
@@ -146,16 +159,20 @@ function splitNames(value: string | undefined): string[] {
 function pickCredits(
   directors: string | undefined,
   creators: string | undefined,
+  parentCreators: string | undefined,
 ): string | null {
   const directorNames = splitNames(directors);
   const creatorNames = splitNames(creators);
+  const parentNames = splitNames(parentCreators);
 
   const chosen =
     directorNames.length > 3 && creatorNames.length > 0
       ? creatorNames
       : directorNames.length > 0
         ? directorNames
-        : creatorNames;
+        : creatorNames.length > 0
+          ? creatorNames
+          : parentNames;
 
   if (chosen.length === 0) {
     return null;
@@ -205,18 +222,19 @@ export async function searchMovies(query: string): Promise<MovieSummary[]> {
         return [];
       }
 
-      const label = row.itemLabel?.value?.trim() ?? "";
-      const title =
-        label && !isRawIdentifier(label)
-          ? label
-          : (row.frTitle?.value?.trim() ?? row.enTitle?.value?.trim() ?? "");
+      const title = row.itemLabel?.value?.trim() ?? "";
 
-      if (!title) {
+      // Sans libellé exploitable, la fiche n'est pas présentable.
+      if (!title || isRawIdentifier(title)) {
         return [];
       }
 
       const year = Number.parseInt(row.year?.value ?? "", 10);
-      const directors = pickCredits(row.directors?.value, row.creators?.value);
+      const directors = pickCredits(
+        row.directors?.value,
+        row.creators?.value,
+        row.parentCreators?.value,
+      );
 
       return [
         {
