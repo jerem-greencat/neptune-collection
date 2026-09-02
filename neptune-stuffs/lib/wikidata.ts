@@ -183,18 +183,66 @@ function pickCredits(
     : chosen.join(", ");
 }
 
-export async function searchMovies(query: string): Promise<MovieSummary[]> {
-  const trimmed = query.trim();
+/**
+ * Reconnaît une saisie qui désigne une saison : « supernatural 15 »,
+ * « supernatural saison 15 », « supernatural s15 ».
+ *
+ * Le numéro doit être en fin de chaîne. Une saisie déjà canonique
+ * (« saison 15 de supernatural ») n'est donc pas reconnue ici — elle marche
+ * telle quelle.
+ */
+function parseSeasonQuery(
+  query: string,
+): { base: string; seasonNumber: number } | null {
+  const match = query.match(
+    /^(.*?)[\s,]+(?:saisons?|seasons?|s)?\s*(\d{1,3})$/i,
+  );
 
-  if (!trimmed) {
-    return [];
+  if (!match) {
+    return null;
   }
 
+  const base = match[1].trim();
+  const seasonNumber = Number.parseInt(match[2], 10);
+
+  if (!base || !Number.isFinite(seasonNumber) || seasonNumber < 1) {
+    return null;
+  }
+
+  return { base, seasonNumber };
+}
+
+/**
+ * Reconstruit le libellé canonique d'une saison, forme française.
+ *
+ * La recherche Wikidata fonctionne par préfixe de libellé : seule la forme
+ * exacte trouve la fiche. Or l'article se contracte avec le titre — « saison 15
+ * de Supernatural » mais « saison 20 des Simpson », et le titre perd son
+ * article dans le libellé. D'où ce petit travail de grammaire.
+ */
+function buildSeasonLabel(base: string, seasonNumber: number): string {
+  const article = base.match(/^(les|le|la|l')\s*/i);
+
+  if (!article) {
+    return `saison ${seasonNumber} de ${base}`;
+  }
+
+  const rest = base.slice(article[0].length).trim();
+  const kind = article[1].toLowerCase();
+
+  if (kind === "les") return `saison ${seasonNumber} des ${rest}`;
+  if (kind === "le") return `saison ${seasonNumber} du ${rest}`;
+  if (kind === "la") return `saison ${seasonNumber} de la ${rest}`;
+
+  return `saison ${seasonNumber} de l'${rest}`;
+}
+
+async function runQuery(search: string): Promise<MovieSummary[]> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
   try {
-    const url = `${SPARQL_ENDPOINT}?query=${encodeURIComponent(buildQuery(trimmed))}`;
+    const url = `${SPARQL_ENDPOINT}?query=${encodeURIComponent(buildQuery(search))}`;
 
     const response = await fetch(url, {
       headers: {
@@ -258,4 +306,71 @@ export async function searchMovies(query: string): Promise<MovieSummary[]> {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/** Une saison est classée après les œuvres, comme dans le tri de la requête. */
+function isSeasonEntry(entry: MovieSummary): boolean {
+  return /saison/i.test(entry.kind ?? "");
+}
+
+/**
+ * Recherche par titre.
+ *
+ * Quand la saisie désigne une saison, deux recherches partent en parallèle : le
+ * titre seul, qui trouve la série et ses films, et le libellé canonique de la
+ * saison, qui trouve la fiche exacte. C'est nécessaire parce que la recherche
+ * Wikidata ne fait que du préfixe de libellé : « supernatural 15 » ne
+ * correspond à rien, et la saison 15 est trop mal classée pour ressortir d'une
+ * recherche sur « supernatural » seul.
+ *
+ * Les deux requêtes sont concurrentes, donc le coût en temps est celui de la
+ * plus lente, pas leur somme. Regrouper les deux recherches dans une seule
+ * requête SPARQL a été tenté : le planificateur s'effondre, au-delà d'une
+ * minute.
+ */
+export async function searchMovies(query: string): Promise<MovieSummary[]> {
+  const trimmed = query.trim();
+
+  if (!trimmed) {
+    return [];
+  }
+
+  const parsed = parseSeasonQuery(trimmed);
+
+  if (!parsed) {
+    return runQuery(trimmed);
+  }
+
+  const [baseResults, seasonResults] = await Promise.all([
+    runQuery(parsed.base),
+    // Une saisie du type « dune 2 » désigne une suite, pas une saison : cette
+    // recherche ne rend alors rien, ce qui est sans conséquence.
+    runQuery(buildSeasonLabel(parsed.base, parsed.seasonNumber)).catch(
+      () => [] as MovieSummary[],
+    ),
+  ]);
+
+  const merged = [...baseResults];
+  const seen = new Set(merged.map((entry) => entry.wikidataId));
+
+  for (const entry of seasonResults) {
+    if (!seen.has(entry.wikidataId)) {
+      seen.add(entry.wikidataId);
+      merged.push(entry);
+    }
+  }
+
+  // Même règle que la requête : les œuvres d'abord, puis les saisons par année.
+  return merged.sort((left, right) => {
+    const bySeason = Number(isSeasonEntry(left)) - Number(isSeasonEntry(right));
+
+    if (bySeason !== 0) {
+      return bySeason;
+    }
+
+    return (
+      (left.year ?? Number.POSITIVE_INFINITY) -
+      (right.year ?? Number.POSITIVE_INFINITY)
+    );
+  });
 }
