@@ -241,9 +241,11 @@ export default function AddDvd() {
                             {movie.title}
                             {movie.year ? ` (${movie.year})` : ""}
                           </span>
-                          {movie.directors && (
+                          {(movie.kind || movie.directors) && (
                             <span className="block text-xs text-gray-500 break-words">
-                              {movie.directors}
+                              {[movie.kind, movie.directors]
+                                .filter(Boolean)
+                                .join(" · ")}
                             </span>
                           )}
                         </button>
@@ -280,6 +282,9 @@ export default function AddDvd() {
                       name="directors"
                       value={picked.directors}
                     />
+                  )}
+                  {picked.kind && (
+                    <input type="hidden" name="kind" value={picked.kind} />
                   )}
                 </>
               )}

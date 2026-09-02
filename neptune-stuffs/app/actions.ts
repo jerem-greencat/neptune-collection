@@ -81,6 +81,7 @@ const filmFields = {
     .regex(/^tt\d+$/, "Identifiant IMDb invalide.")
     .optional(),
   directors: z.string().max(300).optional(),
+  kind: z.string().max(80).optional(),
 };
 
 const dvdSchema = z.object({

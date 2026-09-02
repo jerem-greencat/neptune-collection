@@ -11,6 +11,7 @@ interface EditDvdButtonProps {
   currentBarcode?: string;
   currentYear?: number;
   currentDirectors?: string;
+  currentKind?: string;
 }
 
 export default function EditDvdButton({
@@ -19,6 +20,7 @@ export default function EditDvdButton({
   currentBarcode,
   currentYear,
   currentDirectors,
+  currentKind,
 }: EditDvdButtonProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -146,12 +148,15 @@ export default function EditDvdButton({
                 </div>
 
                 {/* Ce qui est déjà associé, tant qu'aucune nouvelle fiche n'est choisie. */}
-                {!picked && (currentYear || currentDirectors) && (
-                  <p className="text-gray-500 text-xs mt-2">
-                    Fiche actuelle :{" "}
-                    {[currentYear, currentDirectors].filter(Boolean).join(" — ")}
-                  </p>
-                )}
+                {!picked &&
+                  (currentYear || currentDirectors || currentKind) && (
+                    <p className="text-gray-500 text-xs mt-2">
+                      Fiche actuelle :{" "}
+                      {[currentKind, currentYear, currentDirectors]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
+                  )}
 
                 {searchError && (
                   <p className="text-red-500 text-xs mt-2">{searchError}</p>
@@ -176,9 +181,11 @@ export default function EditDvdButton({
                             {movie.title}
                             {movie.year ? ` (${movie.year})` : ""}
                           </span>
-                          {movie.directors && (
+                          {(movie.kind || movie.directors) && (
                             <span className="block text-xs text-gray-500 break-words">
-                              {movie.directors}
+                              {[movie.kind, movie.directors]
+                                .filter(Boolean)
+                                .join(" · ")}
                             </span>
                           )}
                         </button>
@@ -190,7 +197,9 @@ export default function EditDvdButton({
                 {picked && (
                   <p className="text-green-700 text-xs mt-2">
                     Nouvelle fiche :{" "}
-                    {[picked.year, picked.directors].filter(Boolean).join(" — ")}
+                    {[picked.kind, picked.year, picked.directors]
+                      .filter(Boolean)
+                      .join(" · ")}
                   </p>
                 )}
               </div>
@@ -215,6 +224,9 @@ export default function EditDvdButton({
                       name="directors"
                       value={picked.directors}
                     />
+                  )}
+                  {picked.kind && (
+                    <input type="hidden" name="kind" value={picked.kind} />
                   )}
                 </>
               )}
