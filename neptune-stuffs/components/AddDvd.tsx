@@ -274,6 +274,13 @@ export default function AddDvd() {
                   {picked.imdbId && (
                     <input type="hidden" name="imdbId" value={picked.imdbId} />
                   )}
+                  {picked.directors && (
+                    <input
+                      type="hidden"
+                      name="directors"
+                      value={picked.directors}
+                    />
+                  )}
                 </>
               )}
 

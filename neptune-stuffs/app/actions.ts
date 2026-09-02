@@ -69,6 +69,7 @@ const filmFields = {
     .string()
     .regex(/^tt\d+$/, "Identifiant IMDb invalide.")
     .optional(),
+  directors: z.string().max(300).optional(),
 };
 
 const dvdSchema = z.object({
@@ -77,6 +78,22 @@ const dvdSchema = z.object({
   ...filmFields,
 });
 
+/**
+ * Ne retient que les champs film réellement fournis, pour ne pas écrire des
+ * `undefined` ni effacer une fiche déjà associée quand le formulaire ne les
+ * transmet pas.
+ */
+function filmValues(film: {
+  year?: number;
+  wikidataId?: string;
+  imdbId?: string;
+  directors?: string;
+}): Record<string, string | number> {
+  return Object.fromEntries(
+    Object.entries(film).filter(([, value]) => value !== undefined),
+  ) as Record<string, string | number>;
+}
+
 function barcodeFields(raw: string | undefined): { barcode?: string } {
   const barcode = normalizeBarcode(raw ?? "");
 
@@ -84,7 +101,7 @@ function barcodeFields(raw: string | undefined): { barcode?: string } {
 }
 
 function buildUpdate(
-  fields: Record<string, string>,
+  fields: Record<string, string | number>,
   rawBarcode: string | undefined,
 ) {
   const barcode = normalizeBarcode(rawBarcode ?? "");
@@ -108,14 +125,12 @@ export async function addDvdAction(formData: FormData) {
     const client = await getMongoClient();
     const db = client.db("neptune-collection");
 
-    const { title, barcode, year, wikidataId, imdbId } = parsed.data;
+    const { title, barcode, ...film } = parsed.data;
 
     await db.collection("dvds").insertOne({
       title,
       ...barcodeFields(barcode),
-      ...(year ? { year } : {}),
-      ...(wikidataId ? { wikidataId } : {}),
-      ...(imdbId ? { imdbId } : {}),
+      ...filmValues(film),
     });
 
     updateTag(DVDS_CACHE_TAG);
@@ -162,6 +177,7 @@ const updateDvdSchema = z.object({
   dvdId: z.string().min(1, "L'ID du dvd est requis."),
   title: z.string().min(1, "Le titre est requis."),
   barcode: barcodeField,
+  ...filmFields,
 });
 
 export async function updateDvdAction(formData: FormData) {
@@ -181,11 +197,15 @@ export async function updateDvdAction(formData: FormData) {
     const client = await getMongoClient();
     const db = client.db("neptune-collection");
 
-    const { dvdId, title, barcode } = parsed.data;
+    const { dvdId, title, barcode, ...film } = parsed.data;
 
+    // Les champs film absents du formulaire laissent la fiche existante intacte.
     await db
       .collection("dvds")
-      .updateOne({ _id: new ObjectId(dvdId) }, buildUpdate({ title }, barcode));
+      .updateOne(
+        { _id: new ObjectId(dvdId) },
+        buildUpdate({ title, ...filmValues(film) }, barcode),
+      );
 
     updateTag(DVDS_CACHE_TAG);
     revalidatePath("/dvds");

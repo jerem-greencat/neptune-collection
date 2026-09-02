@@ -17,7 +17,7 @@ interface DvdDocument {
 	title: string;
 	barcode?: string;
 	year?: number;
-	// year: number;
+	directors?: string;
 }
 
 interface Dvd {
@@ -25,6 +25,7 @@ interface Dvd {
 	title: string;
 	barcode?: string;
 	year?: number;
+	directors?: string;
 }
 
 const getDvds = unstable_cache(
@@ -48,6 +49,7 @@ const getDvds = unstable_cache(
 			title: dvd.title,
 			barcode: dvd.barcode,
 			year: dvd.year,
+			directors: dvd.directors,
 		}));
 	},
 	["dvds-list"],
@@ -93,6 +95,9 @@ export default async function DvdsPage({
 										</span>
 									) : null}
 								</p>
+								{dvd.directors ? (
+									<p className="text-gray-600 break-words">{dvd.directors}</p>
+								) : null}
 							</div>
 
 							<div className="flex flex-col md:flex-row gap-2 md:gap-4 shrink-0">
@@ -100,6 +105,8 @@ export default async function DvdsPage({
 									dvdId={dvd.id}
 									currentTitle={dvd.title}
 									currentBarcode={dvd.barcode}
+									currentYear={dvd.year}
+									currentDirectors={dvd.directors}
 								/>
 								<DeleteDvdButton dvdId={dvd.id} title={dvd.title} />
 							</div>
