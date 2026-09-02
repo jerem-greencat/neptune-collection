@@ -17,7 +17,7 @@ interface VinylDocument {
 	artist: string;
 	title: string;
 	barcode?: string;
-	// year: number;
+	year?: number;
 }
 
 interface Vinyl {
@@ -25,6 +25,7 @@ interface Vinyl {
 	artist: string;
 	title: string;
 	barcode?: string;
+	year?: number;
 }
 
 const getVinyls = unstable_cache(
@@ -53,6 +54,7 @@ const getVinyls = unstable_cache(
 			artist: vinyl.artist,
 			title: vinyl.title,
 			barcode: vinyl.barcode,
+			year: vinyl.year,
 		}));
 	},
 	["vinyls-list"],
@@ -93,7 +95,12 @@ export default async function VinylsPage({
 								<p className="text-lg sm:text-xl font-semibold break-words">
 									{vinyl.artist}
 								</p>
-								<p className="text-gray-600 break-words">{vinyl.title}</p>
+								<p className="text-gray-600 break-words">
+									{vinyl.title}
+									{vinyl.year ? (
+										<span className="ml-2 text-sm text-gray-500">{vinyl.year}</span>
+									) : null}
+								</p>
 							</div>
 
 							<div className="flex flex-col md:flex-row gap-2 md:gap-4 shrink-0">
@@ -102,6 +109,7 @@ export default async function VinylsPage({
 									currentArtist={vinyl.artist}
 									currentTitle={vinyl.title}
 									currentBarcode={vinyl.barcode}
+									currentYear={vinyl.year}
 								/>
 								<DeleteVinylButton
 									vinylId={vinyl.id}

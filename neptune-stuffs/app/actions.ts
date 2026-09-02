@@ -3,9 +3,12 @@
 import { z } from "zod";
 import {
   DiscogsError,
+  getMaster,
   lookupBarcode,
   normalizeBarcode,
   type ReleaseMetadata,
+  type ReleaseSummary,
+  searchMasters,
 } from "@/lib/discogs";
 import { type MovieSummary, searchMovies, WikidataError } from "@/lib/wikidata";
 import getMongoClient, {
@@ -48,10 +51,18 @@ export async function logoutAction() {
 /** Facultatif : un disque saisi à la main n'a pas forcément de code-barres. */
 const barcodeField = z.string().optional();
 
+/** Champs issus de Discogs : absents si le vinyle est saisi entièrement à la main. */
+const releaseFields = {
+  year: z.coerce.number().int().min(1880).max(2200).optional(),
+  discogsReleaseId: z.coerce.number().int().positive().optional(),
+  discogsMasterId: z.coerce.number().int().positive().optional(),
+};
+
 const vinylSchema = z.object({
   artist: z.string().min(1, "Le nom de l'artiste est requis."),
   title: z.string().min(1, "Le titre est requis."),
   barcode: barcodeField,
+  ...releaseFields,
 });
 
 /**
@@ -83,14 +94,11 @@ const dvdSchema = z.object({
  * `undefined` ni effacer une fiche déjà associée quand le formulaire ne les
  * transmet pas.
  */
-function filmValues(film: {
-  year?: number;
-  wikidataId?: string;
-  imdbId?: string;
-  directors?: string;
-}): Record<string, string | number> {
+function definedFields(
+  fields: Record<string, string | number | undefined>,
+): Record<string, string | number> {
   return Object.fromEntries(
-    Object.entries(film).filter(([, value]) => value !== undefined),
+    Object.entries(fields).filter(([, value]) => value !== undefined),
   ) as Record<string, string | number>;
 }
 
@@ -130,7 +138,7 @@ export async function addDvdAction(formData: FormData) {
     await db.collection("dvds").insertOne({
       title,
       ...barcodeFields(barcode),
-      ...filmValues(film),
+      ...definedFields(film),
     });
 
     updateTag(DVDS_CACHE_TAG);
@@ -204,7 +212,7 @@ export async function updateDvdAction(formData: FormData) {
       .collection("dvds")
       .updateOne(
         { _id: new ObjectId(dvdId) },
-        buildUpdate({ title, ...filmValues(film) }, barcode),
+        buildUpdate({ title, ...definedFields(film) }, barcode),
       );
 
     updateTag(DVDS_CACHE_TAG);
@@ -230,10 +238,13 @@ export async function addVinylAction(formData: FormData) {
     const client = await getMongoClient();
     const db = client.db("neptune-collection");
 
+    const { artist, title, barcode, ...release } = parsed.data;
+
     await db.collection("vinyls").insertOne({
-      artist: parsed.data.artist,
-      title: parsed.data.title,
-      ...barcodeFields(parsed.data.barcode),
+      artist,
+      title,
+      ...barcodeFields(barcode),
+      ...definedFields(release),
     });
 
     updateTag(VINYLS_CACHE_TAG);
@@ -281,6 +292,7 @@ const updateVinylSchema = z.object({
   artist: z.string().min(1, "Le nom de l'artiste est requis."),
   title: z.string().min(1, "Le titre est requis."),
   barcode: barcodeField,
+  ...releaseFields,
 });
 
 export async function updateVinylAction(formData: FormData) {
@@ -300,13 +312,14 @@ export async function updateVinylAction(formData: FormData) {
     const client = await getMongoClient();
     const db = client.db("neptune-collection");
 
-    const { vinylId, artist, title, barcode } = parsed.data;
+    const { vinylId, artist, title, barcode, ...release } = parsed.data;
 
+    // Les champs de fiche absents du formulaire laissent l'existant intact.
     await db
       .collection("vinyls")
       .updateOne(
         { _id: new ObjectId(vinylId) },
-        buildUpdate({ artist, title }, barcode),
+        buildUpdate({ artist, title, ...definedFields(release) }, barcode),
       );
 
     updateTag(VINYLS_CACHE_TAG);
@@ -442,6 +455,80 @@ export async function searchMoviesAction(
         error instanceof WikidataError
           ? error.message
           : "La recherche de film a échoué.",
+    };
+  }
+}
+
+export interface ReleaseSearchResult {
+  success: boolean;
+  error?: string;
+  releases?: ReleaseSummary[];
+}
+
+/**
+ * Recherche de vinyles par artiste et/ou titre. Complète la recherche par
+ * code-barres, qui suppose d'avoir le disque en main.
+ *
+ * Les deux critères sont transmis séparément à Discogs : une recherche libre
+ * sur un nom d'artiste saturait la liste avec les rééditions de son album
+ * homonyme.
+ */
+export async function searchVinylsAction(
+  artist: string,
+  title: string,
+): Promise<ReleaseSearchResult> {
+  if (!(await isSessionValid())) return UNAUTHORIZED;
+
+  if (!artist.trim() && !title.trim()) {
+    return { success: true, releases: [] };
+  }
+
+  try {
+    return { success: true, releases: await searchMasters({ artist, title }) };
+  } catch (error) {
+    console.error("Erreur Discogs:", error);
+
+    return {
+      success: false,
+      error:
+        error instanceof DiscogsError
+          ? error.message
+          : "La recherche Discogs a échoué.",
+    };
+  }
+}
+
+export interface ReleasePickResult {
+  success: boolean;
+  error?: string;
+  metadata?: ReleaseMetadata | null;
+}
+
+/**
+ * Lit la fiche de l'album choisi dans la liste. La recherche ne rend qu'un
+ * artiste et un titre découpés approximativement ; la fiche les rend propres et
+ * donne l'année de sortie d'origine.
+ */
+export async function pickVinylMasterAction(
+  discogsMasterId: number,
+): Promise<ReleasePickResult> {
+  if (!(await isSessionValid())) return UNAUTHORIZED;
+
+  if (!Number.isInteger(discogsMasterId) || discogsMasterId <= 0) {
+    return { success: false, error: "Référence Discogs invalide." };
+  }
+
+  try {
+    return { success: true, metadata: await getMaster(discogsMasterId) };
+  } catch (error) {
+    console.error("Erreur Discogs:", error);
+
+    return {
+      success: false,
+      error:
+        error instanceof DiscogsError
+          ? error.message
+          : "La lecture de la fiche a échoué.",
     };
   }
 }
