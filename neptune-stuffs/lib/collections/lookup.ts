@@ -1,4 +1,5 @@
 import type { ObjectId } from "mongodb";
+import { barcodeVariants } from "@/lib/barcode";
 import { getDb } from "@/lib/mongodb";
 import type { OwnedMatch } from "./types";
 
@@ -22,9 +23,11 @@ export async function findByBarcode(
 ): Promise<OwnedMatch | null> {
   const db = await getDb();
 
+  // Un même disque peut être enregistré en UPC-A ou en EAN-13 : on cherche les
+  // deux écritures, sinon un scan ne reconnaîtrait pas ce qui vient de Discogs.
   const existing = await db
     .collection<LabelledDocument>(collection)
-    .findOne({ barcode });
+    .findOne({ barcode: { $in: barcodeVariants(barcode) } });
 
   if (!existing) {
     return null;

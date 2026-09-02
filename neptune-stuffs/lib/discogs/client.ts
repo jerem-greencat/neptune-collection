@@ -54,7 +54,3 @@ export async function discogsFetch<T>(path: string): Promise<T> {
     clearTimeout(timeout);
   }
 }
-
-export function normalizeBarcode(barcode: string): string {
-  return barcode.replace(/\D/g, "");
-}

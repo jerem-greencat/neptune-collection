@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# copié depuis node_modules au postinstall
+/public/zxing_reader.wasm

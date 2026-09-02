@@ -1,4 +1,5 @@
-import { discogsFetch, normalizeBarcode } from "./client";
+import { normalizeBarcode } from "@/lib/barcode";
+import { discogsFetch } from "./client";
 import {
   joinArtists,
   type MasterResponse,
@@ -9,7 +10,6 @@ import {
 } from "./mapping";
 import type { ReleaseMetadata, ReleaseSummary } from "./types";
 
-export { normalizeBarcode } from "./client";
 export type { ReleaseMetadata, ReleaseSummary } from "./types";
 export { DiscogsError } from "./types";
 

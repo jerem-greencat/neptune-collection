@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { normalizeBarcode } from "@/lib/discogs";
+import { normalizeBarcode } from "@/lib/barcode";
 
 /** Facultatif : un disque saisi à la main n'a pas forcément de code-barres. */
 export const barcodeField = z.string().optional();

@@ -3,6 +3,7 @@
 import { ObjectId } from "mongodb";
 import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
+import { normalizeBarcode } from "@/lib/barcode";
 import { describeExternalError } from "@/lib/collections/errors";
 import {
   barcodeField,
@@ -18,7 +19,6 @@ import type {
   MovieSearchResult,
 } from "@/lib/collections/types";
 import { UNAUTHORIZED } from "@/lib/collections/types";
-import { normalizeBarcode } from "@/lib/discogs";
 import { DVDS_CACHE_TAG, describeDatabaseError, getDb } from "@/lib/mongodb";
 import { isSessionValid } from "@/lib/session";
 import { searchMovies } from "@/lib/wikidata";

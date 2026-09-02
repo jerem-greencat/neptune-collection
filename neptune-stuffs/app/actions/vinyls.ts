@@ -3,6 +3,7 @@
 import { ObjectId } from "mongodb";
 import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
+import { normalizeBarcode } from "@/lib/barcode";
 import { describeExternalError } from "@/lib/collections/errors";
 import {
   barcodeField,
@@ -20,12 +21,7 @@ import type {
   ReleaseSearchResult,
 } from "@/lib/collections/types";
 import { UNAUTHORIZED } from "@/lib/collections/types";
-import {
-  getMaster,
-  lookupBarcode,
-  normalizeBarcode,
-  searchMasters,
-} from "@/lib/discogs";
+import { getMaster, lookupBarcode, searchMasters } from "@/lib/discogs";
 import { describeDatabaseError, getDb, VINYLS_CACHE_TAG } from "@/lib/mongodb";
 import { isSessionValid } from "@/lib/session";
 
