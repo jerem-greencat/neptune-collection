@@ -35,7 +35,9 @@ export default function EditVinylButton({
   const [barcode, setBarcode] = useState(currentBarcode ?? "");
 
   const initial = { artist: currentArtist, title: currentTitle };
-  const search = useVinylSearch(initial);
+  // L'identifiant exclut ce disque de la recherche de doublon : il se
+  // reconnaîtrait lui-même.
+  const search = useVinylSearch(initial, vinylId);
 
   const resetState = () => {
     setBarcode(currentBarcode ?? "");

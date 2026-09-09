@@ -13,7 +13,7 @@ import {
   describeValidationError,
   releaseFields,
 } from "@/lib/collections/fields";
-import { findByBarcode } from "@/lib/collections/lookup";
+import { findByBarcode, findOwnedWork } from "@/lib/collections/lookup";
 import type {
   BarcodeLookupResult,
   OwnedMatch,
@@ -226,5 +226,38 @@ export async function pickVinylMasterAction(
       success: false,
       error: describeExternalError(error, "La lecture de la fiche a échoué."),
     };
+  }
+}
+
+/**
+ * Cherche si l'album associé est déjà dans la collection, quel que soit son
+ * pressage.
+ *
+ * Complète la recherche par code-barres, qui ne repère qu'un pressage à
+ * l'identique : le pressage d'origine et une réédition du même album portent
+ * des codes-barres différents.
+ */
+export async function findOwnedVinylAction(
+  discogsMasterId: number | undefined,
+  excludeVinylId?: string,
+): Promise<BarcodeLookupResult> {
+  if (!(await isSessionValid())) return UNAUTHORIZED;
+
+  if (!discogsMasterId) {
+    return { success: true, alreadyOwned: null };
+  }
+
+  try {
+    return {
+      success: true,
+      alreadyOwned: await findOwnedWork(
+        "vinyls",
+        { discogsMasterId },
+        excludeVinylId,
+      ),
+    };
+  } catch (error) {
+    console.error("Erreur lors de la recherche de doublon:", error);
+    return { success: false, error: describeDatabaseError(error) };
   }
 }

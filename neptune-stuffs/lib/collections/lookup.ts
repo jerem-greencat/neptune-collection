@@ -9,8 +9,6 @@ interface LabelledDocument {
   artist?: string;
   title: string;
   year?: number;
-  wikidataId?: string;
-  imdbId?: string;
 }
 
 function toOwnedMatch(document: LabelledDocument): OwnedMatch {
@@ -49,22 +47,26 @@ export async function findByBarcode(
 /**
  * Cherche une œuvre déjà possédée, quelle que soit son édition.
  *
- * Le code-barres ne peut pas répondre à « ai-je déjà ce film ? » : deux éditions
- * du même film, ou le même film en DVD et en Blu-ray, portent des codes
- * différents. Ce qui identifie l'œuvre, c'est son identifiant Wikidata ou IMDb.
+ * Le code-barres ne peut pas répondre à « ai-je déjà ce film, ce disque ? » :
+ * deux éditions de la même œuvre portent des codes différents — un film en DVD
+ * et en Blu-ray, un album en pressage d'origine et en réédition. Ce qui
+ * identifie l'œuvre, c'est son identifiant de référence : Wikidata ou IMDb pour
+ * un film, le « master » Discogs pour un disque.
  *
- * `excludeId` sert à la modification : sans lui, un dvd se reconnaîtrait
- * lui-même comme doublon.
+ * `identity` accepte les champs propres à chaque collection ; n'importe lequel
+ * qui correspond suffit à signaler le doublon.
+ *
+ * `excludeId` sert à la modification : sans lui, une fiche se reconnaîtrait
+ * elle-même comme doublon.
  */
 export async function findOwnedWork(
   collection: "vinyls" | "dvds",
-  identity: { wikidataId?: string; imdbId?: string },
+  identity: Record<string, string | number | undefined>,
   excludeId?: string,
 ): Promise<OwnedMatch | null> {
-  const identifiers = [
-    ...(identity.wikidataId ? [{ wikidataId: identity.wikidataId }] : []),
-    ...(identity.imdbId ? [{ imdbId: identity.imdbId }] : []),
-  ];
+  const identifiers = Object.entries(identity)
+    .filter(([, value]) => value !== undefined && value !== "")
+    .map(([field, value]) => ({ [field]: value }));
 
   if (identifiers.length === 0) {
     return null;

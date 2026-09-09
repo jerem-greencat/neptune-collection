@@ -2,9 +2,11 @@
 
 import { useState, useTransition } from "react";
 import {
+  findOwnedVinylAction,
   pickVinylMasterAction,
   searchVinylsAction,
 } from "@/app/actions/vinyls";
+import type { OwnedMatch } from "@/lib/collections/types";
 import type { ReleaseMetadata, ReleaseSummary } from "@/lib/discogs";
 
 interface InitialVinyl {
@@ -22,8 +24,15 @@ interface InitialVinyl {
  * Choisir dans la liste demande une seconde requête : la recherche ne rend
  * qu'un artiste et un titre découpés approximativement, la fiche les rend
  * propres et donne l'année de sortie d'origine.
+ *
+ * Associer une fiche déclenche une recherche de doublon sur l'album lui-même
+ * (le « master » Discogs). Un code-barres ne désigne qu'un pressage : le
+ * pressage d'origine et une réédition du même album ont des codes différents.
+ *
+ * `excludeVinylId` évite qu'un disque en cours de modification se signale
+ * lui-même comme doublon.
  */
-export function useVinylSearch(initial: InitialVinyl) {
+export function useVinylSearch(initial: InitialVinyl, excludeVinylId?: string) {
   const [artist, setArtist] = useState(initial.artist);
   const [title, setTitle] = useState(initial.title);
 
@@ -31,12 +40,30 @@ export function useVinylSearch(initial: InitialVinyl) {
   const [results, setResults] = useState<ReleaseSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attached, setAttached] = useState<ReleaseMetadata | null>(null);
+  const [alreadyOwned, setAlreadyOwned] = useState<OwnedMatch | null>(null);
 
+  /**
+   * Point de passage unique des deux voies. La vérification de doublon vit ici
+   * pour couvrir aussi bien le scan que la recherche par artiste ou titre.
+   */
   const attach = (metadata: ReleaseMetadata) => {
     setAttached(metadata);
     setArtist(metadata.artist);
     setTitle(metadata.title);
     setResults(null);
+    setAlreadyOwned(null);
+
+    startSearch(async () => {
+      const owned = await findOwnedVinylAction(
+        metadata.discogsMasterId ?? undefined,
+        excludeVinylId,
+      );
+
+      // Un échec de cette vérification ne doit pas empêcher l'ajout.
+      if (owned.success && owned.alreadyOwned) {
+        setAlreadyOwned(owned.alreadyOwned);
+      }
+    });
   };
 
   const run = () => {
@@ -78,6 +105,7 @@ export function useVinylSearch(initial: InitialVinyl) {
     setResults(null);
     setError(null);
     setAttached(null);
+    setAlreadyOwned(null);
   };
 
   return {
@@ -89,8 +117,12 @@ export function useVinylSearch(initial: InitialVinyl) {
     results,
     error,
     attached,
+    alreadyOwned,
     attach,
-    detach: () => setAttached(null),
+    detach: () => {
+      setAttached(null);
+      setAlreadyOwned(null);
+    },
     run,
     pick,
     reset,

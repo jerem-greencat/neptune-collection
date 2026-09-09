@@ -41,6 +41,17 @@ export default function VinylSearchFeedback({
         </div>
       )}
 
+      {/*
+        Un avertissement, pas un blocage : posséder deux pressages du même album
+        est légitime, et c'est à toi de trancher.
+      */}
+      {search.alreadyOwned && (
+        <p className="text-amber-700 text-xs mb-4">
+          Tu as déjà cet album, dans un autre pressage :{" "}
+          {search.alreadyOwned.label}
+        </p>
+      )}
+
       {search.attached && (
         <p className="text-green-700 text-xs mb-4">
           Fiche Discogs associée
