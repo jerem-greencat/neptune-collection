@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import AddVinyl from "@/components/AddVinyl";
+import CollectionHeader from "@/components/CollectionHeader";
 import DeleteVinylButton from "@/components/DeleteVinylButton";
 import EditVinylButton from "@/components/EditVinylButton";
 import SearchBar from "@/components/SearchBar";
+import Sleeve from "@/components/ui/Sleeve";
 import { getVinyls } from "@/lib/collections/vinyls";
 import { isSessionValid } from "@/lib/session";
 
@@ -19,38 +21,45 @@ export default async function VinylsPage({
   const vinyls = await getVinyls(query);
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:p-8">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6">
-          Ma Collection de Vinyles
-        </h1>
-        <AddVinyl />
-      </div>
+    <div className="mx-auto max-w-3xl px-5 py-10 sm:px-8">
+      <CollectionHeader
+        overline="Collection"
+        title="Vinyles"
+        count={vinyls.length}
+        accent="groove"
+        action={<AddVinyl />}
+      />
 
-      <SearchBar placeholder="Rechercher par titre ou artiste..." />
+      <SearchBar placeholder="Rechercher par artiste ou titre..." />
 
       {vinyls.length > 0 ? (
-        <ul className="space-y-4">
-          {vinyls.map((vinyl) => (
+        <ul className="mt-6 border-t border-ink-800">
+          {vinyls.map((vinyl, index) => (
             <li
               key={vinyl.id}
-              className="bg-white p-4 rounded-lg shadow flex justify-between items-center gap-3"
+              className="group flex items-center gap-4 border-b border-ink-800 py-4 transition-colors hover:bg-ink-900/50"
             >
-              <div className="min-w-0">
-                <p className="text-lg sm:text-xl font-semibold break-words">
+              <span className="catalog-num hidden w-6 shrink-0 text-right text-xs text-paper-600 sm:block">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+
+              <Sleeve kind="vinyl" />
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display text-xl leading-tight text-paper-50">
                   {vinyl.artist}
                 </p>
-                <p className="text-gray-600 break-words">
+                <p className="mt-0.5 truncate text-sm text-paper-400">
                   {vinyl.title}
-                  {vinyl.year ? (
-                    <span className="ml-2 text-sm text-gray-500">
-                      {vinyl.year}
-                    </span>
-                  ) : null}
                 </p>
+                {vinyl.year ? (
+                  <p className="catalog-num mt-1 text-xs text-groove-400/80">
+                    {vinyl.year}
+                  </p>
+                ) : null}
               </div>
 
-              <div className="flex flex-col md:flex-row gap-2 md:gap-4 shrink-0">
+              <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-4">
                 <EditVinylButton
                   vinylId={vinyl.id}
                   currentArtist={vinyl.artist}
@@ -67,10 +76,12 @@ export default async function VinylsPage({
             </li>
           ))}
         </ul>
-      ) : query ? (
-        <p>Aucun vinyle ne correspond à « {query} ».</p>
       ) : (
-        <p>Aucun vinyle dans votre collection pour le moment.</p>
+        <p className="mt-10 text-sm text-paper-500">
+          {query
+            ? `Aucun vinyle ne correspond à « ${query} ».`
+            : "Aucun vinyle pour le moment. Scannez-en un pour commencer."}
+        </p>
       )}
     </div>
   );

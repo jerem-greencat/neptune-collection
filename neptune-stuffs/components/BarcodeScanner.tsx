@@ -141,7 +141,7 @@ export default function BarcodeScanner({
   return (
     <Modal title="Scanner un code-barres" onClose={onClose}>
       {error ? (
-        <p className="text-red-500 text-sm mb-4">{error}</p>
+        <p className="text-alert-400 text-sm mb-4">{error}</p>
       ) : (
         <>
           <video
@@ -150,7 +150,7 @@ export default function BarcodeScanner({
             muted
             className="w-full rounded bg-black aspect-[4/3] object-cover"
           />
-          <p className="text-gray-500 text-xs mt-2 mb-4">
+          <p className="text-paper-500 text-xs mt-2 mb-4">
             {isReady
               ? "Placez le code-barres dans le cadre."
               : "Démarrage de la caméra..."}

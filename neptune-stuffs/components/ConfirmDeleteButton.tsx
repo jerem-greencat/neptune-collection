@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Modal from "@/components/ui/Modal";
 import {
   DANGER_BUTTON_CLASS,
+  ROW_DANGER_ACTION_CLASS,
   SECONDARY_BUTTON_CLASS,
 } from "@/components/ui/styles";
 import type { ActionResult } from "@/lib/collections/types";
@@ -55,7 +56,7 @@ export default function ConfirmDeleteButton({
       <button
         type="button"
         onClick={() => setIsModalOpen(true)}
-        className="flex gap-2 text-red-500 hover:text-red-700 text-sm font-medium"
+        className={ROW_DANGER_ACTION_CLASS}
         aria-label={`Supprimer ${label}`}
       >
         Supprimer <span className="hidden md:block">🗑️</span>
@@ -63,17 +64,19 @@ export default function ConfirmDeleteButton({
 
       {isModalOpen && (
         <Modal title="Confirmer" onClose={handleCloseModal}>
-          <p className="text-gray-700 mb-6">
+          <p className="text-paper-200 mb-6">
             {question}
             <br />
-            <strong className="text-indigo-600 block mt-2">{label}</strong>
+            <strong className="text-paper-50 block mt-2">{label}</strong>
           </p>
 
           <form action={handleSubmit}>
             <input type="hidden" name={idName} value={id} />
 
             {errorMessage && (
-              <p className="text-red-500 text-xs italic mb-4">{errorMessage}</p>
+              <p className="text-alert-400 text-xs italic mb-4">
+                {errorMessage}
+              </p>
             )}
 
             <div className="flex items-center justify-end space-x-4">

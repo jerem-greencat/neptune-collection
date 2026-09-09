@@ -1,10 +1,39 @@
 "use client";
 
+import { Disc3, Film } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation"; // Correct import for App Router
+import { useRouter } from "next/navigation";
 import { type MouseEvent, useState } from "react";
 import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/contexts/AuthContext";
+
+/**
+ * Les deux collections, présentées comme deux rayons.
+ *
+ * La vignette n'est pas décorative : un carré avec un disque au centre, un
+ * rectangle avec une tranche sur le côté. On reconnaît l'objet avant de lire
+ * l'étiquette.
+ */
+const SHELVES = [
+  {
+    href: "/vinyls",
+    label: "Vinyles",
+    detail: "Albums, pressages, rééditions",
+    Icon: Disc3,
+    accent: "text-groove-400",
+    border: "hover:border-groove-500/60",
+    glow: "group-hover:bg-groove-500/10",
+  },
+  {
+    href: "/dvds",
+    label: "Films & séries",
+    detail: "Films, séries, saisons, documentaires",
+    Icon: Film,
+    accent: "text-reel-400",
+    border: "hover:border-reel-500/60",
+    glow: "group-hover:bg-reel-500/10",
+  },
+] as const;
 
 export default function Home() {
   const { isUserLoggedIn, login } = useAuth();
@@ -13,11 +42,11 @@ export default function Home() {
   const router = useRouter();
 
   const handleProtectedClick = (
-    e: MouseEvent<HTMLAnchorElement>,
+    event: MouseEvent<HTMLAnchorElement>,
     path: string,
   ) => {
     if (!isUserLoggedIn) {
-      e.preventDefault();
+      event.preventDefault();
       setRedirectPath(path);
       setShowLoginModal(true);
     }
@@ -26,49 +55,55 @@ export default function Home() {
   const handleLoginSuccess = () => {
     login();
     setShowLoginModal(false);
+
     if (redirectPath) {
       router.push(redirectPath);
-      setRedirectPath(null); // Reset after redirecting
+      setRedirectPath(null);
     }
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-8 dark:bg-gray-900">
-      <main className="flex flex-col items-center text-center">
-        <h1 className="text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-blue-500 sm:text-7xl">
-          Neptune Collects
-        </h1>
+    <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-3xl flex-col justify-center px-5 py-16 sm:px-8">
+      <p className="label-caps">Collection personnelle</p>
 
-        <p className="mt-4 text-lg text-gray-600 dark:text-gray-300 sm:text-xl">
-          Votre collection de vinyles et DVDs, au même endroit.
-        </p>
+      <h1 className="mt-4 font-display text-5xl leading-[1.05] text-paper-50 sm:text-7xl">
+        Neptune Collects
+      </h1>
 
-        <div className="mt-12 flex flex-col gap-4 sm:flex-row">
+      <p className="mt-5 max-w-md text-base leading-relaxed text-paper-400">
+        Vos vinyles et vos films au même endroit. Scannez, retrouvez, et sachez
+        toujours ce que vous possédez déjà.
+      </p>
+
+      <div className="mt-12 grid gap-3 sm:grid-cols-2">
+        {SHELVES.map(({ href, label, detail, Icon, accent, border, glow }) => (
           <Link
-            href="/vinyls"
-            onClick={(e) => handleProtectedClick(e, "/vinyls")}
-            className="flex items-center justify-center rounded-lg bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-md transition-colors hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+            key={href}
+            href={href}
+            onClick={(event) => handleProtectedClick(event, href)}
+            className={`group relative overflow-hidden rounded-lg border border-ink-800 bg-ink-900/60 p-5 transition-colors ${border}`}
           >
-            <span className="mr-2">💿</span>
-            Gérer mes Vinyles
-          </Link>
+            {/* Lueur d'accent au survol, du coin haut-droit. */}
+            <span
+              className={`pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-transparent blur-2xl transition-colors ${glow}`}
+            />
 
-          <Link
-            href="/dvds"
-            onClick={(e) => handleProtectedClick(e, "/dvds")}
-            className="flex items-center justify-center rounded-lg border border-gray-300 bg-white px-6 py-3 text-base font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-          >
-            <span className="mr-2">🎬</span>
-            Gérer mes DVDs
-          </Link>
-        </div>
-      </main>
+            <Icon
+              size={26}
+              strokeWidth={1.5}
+              aria-hidden="true"
+              className={accent}
+            />
 
-      <footer className="absolute bottom-8">
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          © {new Date().getFullYear()} Neptune Collects.
-        </p>
-      </footer>
+            <p className="mt-6 font-display text-2xl text-paper-50">{label}</p>
+            <p className="mt-1 text-sm text-paper-500">{detail}</p>
+          </Link>
+        ))}
+      </div>
+
+      <p className="mt-16 catalog-num text-xs text-paper-600">
+        © {new Date().getFullYear()} Neptune Collects
+      </p>
 
       {showLoginModal && (
         <LoginModal

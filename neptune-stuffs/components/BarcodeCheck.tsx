@@ -130,17 +130,17 @@ export default function BarcodeCheck({
             />
           )}
           {feedback?.kind === "owned" && (
-            <p className="text-amber-700 text-xs mt-2">
+            <p className="mt-2 text-xs text-warn-400">
               Tu l'as déjà : {feedback.label}
             </p>
           )}
           {feedback?.kind === "new" && (
-            <p className="text-green-700 text-xs mt-2">
+            <p className="mt-2 text-xs text-paper-400">
               Pas encore dans ta collection.
             </p>
           )}
           {feedback?.kind === "error" && (
-            <p className="text-red-500 text-xs mt-2">{feedback.message}</p>
+            <p className="text-alert-400 text-xs mt-2">{feedback.message}</p>
           )}
         </>
       }

@@ -8,6 +8,7 @@ import Modal from "@/components/ui/Modal";
 import {
   INLINE_BUTTON_CLASS,
   PRIMARY_BUTTON_CLASS,
+  ROW_ACTION_CLASS,
   SECONDARY_BUTTON_CLASS,
 } from "@/components/ui/styles";
 import TextField from "@/components/ui/TextField";
@@ -74,7 +75,7 @@ export default function EditDvdButton({
       <button
         type="button"
         onClick={() => setIsModalOpen(true)}
-        className="flex gap-2 text-blue-500 hover:text-blue-700 text-sm font-medium"
+        className={ROW_ACTION_CLASS}
         aria-label={`Modifier ${currentTitle}`}
       >
         Modifier <span className="hidden md:block">✏️</span>
@@ -106,7 +107,7 @@ export default function EditDvdButton({
                 <>
                   {/* Ce qui est déjà associé, tant qu'aucune fiche n'est choisie. */}
                   {!search.picked && currentSheet && (
-                    <p className="text-gray-500 text-xs mt-2">
+                    <p className="text-paper-500 text-xs mt-2">
                       Fiche actuelle : {currentSheet}
                     </p>
                   )}
@@ -135,7 +136,9 @@ export default function EditDvdButton({
             />
 
             {errorMessage && (
-              <p className="text-red-500 text-xs italic mb-4">{errorMessage}</p>
+              <p className="text-alert-400 text-xs italic mb-4">
+                {errorMessage}
+              </p>
             )}
 
             <div className="flex items-center justify-end space-x-4">

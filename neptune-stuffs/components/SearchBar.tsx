@@ -43,7 +43,7 @@ export default function SearchBar({ placeholder }: SearchBarProps) {
     <div className="relative mb-6">
       <Search
         aria-hidden="true"
-        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+        className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-paper-500"
       />
       <input
         type="search"
@@ -51,16 +51,16 @@ export default function SearchBar({ placeholder }: SearchBarProps) {
         onChange={(event) => setValue(event.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className="shadow appearance-none border rounded w-full py-2 pl-10 pr-10 text-gray-700 leading-tight bg-white focus:outline-none focus:shadow-outline"
+        className="w-full rounded-md border border-ink-800 bg-ink-900/60 py-2.5 pl-9 pr-9 text-sm text-paper-50 placeholder:text-paper-600 transition-colors focus:border-ink-600 focus:bg-ink-900 focus:outline-none"
       />
       {value && (
         <button
           type="button"
           onClick={() => setValue("")}
           aria-label="Effacer la recherche"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-800"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-paper-500 transition-colors hover:text-paper-50"
         >
-          <X className="h-5 w-5" />
+          <X className="h-4 w-4" />
         </button>
       )}
       {isPending && <output className="sr-only">Recherche en cours...</output>}

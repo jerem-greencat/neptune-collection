@@ -60,7 +60,7 @@ export default function AddDvd() {
       <button
         type="button"
         onClick={() => setIsModalOpen(true)}
-        className={`mb-6 ${PRIMARY_BUTTON_CLASS}`}
+        className={PRIMARY_BUTTON_CLASS}
       >
         Ajouter un Dvd 🎬
       </button>
@@ -105,7 +105,9 @@ export default function AddDvd() {
             />
 
             {errorMessage && (
-              <p className="text-red-500 text-xs italic mb-4">{errorMessage}</p>
+              <p className="text-alert-400 text-xs italic mb-4">
+                {errorMessage}
+              </p>
             )}
 
             <div className="flex items-center justify-end">

@@ -25,19 +25,19 @@ export default function PickList({ options, onPick }: PickListProps) {
   }
 
   return (
-    <ul className="mt-2 border rounded divide-y max-h-60 overflow-y-auto">
+    <ul className="mt-2 max-h-60 divide-y divide-ink-800 overflow-y-auto rounded-md border border-ink-700 bg-ink-950/60">
       {options.map((option) => (
         <li key={option.id}>
           <button
             type="button"
             onClick={() => onPick(option.id)}
-            className="block w-full text-left p-2 hover:bg-gray-100"
+            className="block w-full p-2.5 text-left transition-colors hover:bg-ink-850"
           >
-            <span className="block text-sm font-medium break-words">
+            <span className="block break-words text-sm font-medium text-paper-50">
               {option.label}
             </span>
             {option.details && (
-              <span className="block text-xs text-gray-500 break-words">
+              <span className="mt-0.5 block break-words text-xs text-paper-500">
                 {option.details}
               </span>
             )}

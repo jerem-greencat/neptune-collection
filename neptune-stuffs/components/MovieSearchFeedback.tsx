@@ -12,11 +12,11 @@ export default function MovieSearchFeedback({
   return (
     <>
       {search.error && (
-        <p className="text-red-500 text-xs mt-2">{search.error}</p>
+        <p className="mt-2 text-xs text-alert-400">{search.error}</p>
       )}
 
       {search.results?.length === 0 && (
-        <p className="text-gray-500 text-xs mt-2">
+        <p className="mt-2 text-xs text-paper-500">
           Aucun résultat, le titre saisi sera utilisé tel quel.
         </p>
       )}
@@ -33,7 +33,7 @@ export default function MovieSearchFeedback({
       )}
 
       {search.picked && (
-        <p className="text-green-700 text-xs mt-2">
+        <p className="mt-2 text-xs text-reel-300">
           Fiche associée : {describeWork(search.picked)}
         </p>
       )}
@@ -43,7 +43,7 @@ export default function MovieSearchFeedback({
         Blu-ray est légitime, et c'est à toi de trancher.
       */}
       {search.alreadyOwned && (
-        <p className="text-amber-700 text-xs mt-2">
+        <p className="mt-2 text-xs text-warn-400">
           Tu as déjà ce film, dans une autre édition :{" "}
           {search.alreadyOwned.label}
         </p>

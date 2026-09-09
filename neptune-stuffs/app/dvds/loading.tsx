@@ -1,23 +1,32 @@
+/**
+ * Affiché pendant que la page interroge MongoDB. Sans ça, sur réseau faible,
+ * l'utilisateur reste sur la page précédente sans aucun retour visuel.
+ *
+ * Le squelette reprend la géométrie réelle de la liste — index, pochette, deux
+ * lignes de texte — pour qu'il n'y ait pas de saut à l'arrivée des données.
+ */
 export default function LoadingDvds() {
   return (
-    <div className="container mx-auto px-4 py-6 sm:p-8 animate-pulse">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6">
-          Ma Collection de Dvds
-        </h1>
-        <div className="h-10 w-40 bg-gray-200 rounded mb-6" />
+    <div className="mx-auto max-w-3xl animate-pulse px-5 py-10 sm:px-8">
+      <div className="mb-8">
+        <div className="h-px w-8 bg-reel-500/40" />
+        <div className="mt-4 h-10 w-64 rounded bg-ink-850" />
       </div>
 
-      <div className="h-10 w-full bg-gray-200 rounded mb-6" />
+      <div className="h-11 w-full rounded-md bg-ink-900" />
 
-      <ul className="space-y-4">
-        {[0, 1, 2].map((index) => (
+      <ul className="mt-6 border-t border-ink-800">
+        {[0, 1, 2, 3].map((index) => (
           <li
             key={index}
-            className="bg-white p-4 rounded-lg shadow flex justify-between items-center gap-3"
+            className="flex items-center gap-4 border-b border-ink-800 py-4"
           >
-            <div className="h-6 w-1/2 bg-gray-200 rounded" />
-            <div className="h-6 w-24 bg-gray-200 rounded shrink-0" />
+            <div className="hidden h-3 w-6 shrink-0 rounded bg-ink-850 sm:block" />
+            <div className="h-12 w-12 shrink-0 rounded-sm bg-ink-850" />
+            <div className="min-w-0 flex-1 space-y-2">
+              <div className="h-5 w-2/5 rounded bg-ink-850" />
+              <div className="h-3.5 w-3/5 rounded bg-ink-900" />
+            </div>
           </li>
         ))}
       </ul>

@@ -17,11 +17,11 @@ export default function VinylSearchFeedback({
   return (
     <>
       {search.error && (
-        <p className="text-red-500 text-xs mb-4">{search.error}</p>
+        <p className="text-alert-400 text-xs mb-4">{search.error}</p>
       )}
 
       {search.results?.length === 0 && (
-        <p className="text-gray-500 text-xs mb-4">
+        <p className="text-paper-500 text-xs mb-4">
           Aucune release trouvée, les champs saisis seront utilisés tels quels.
         </p>
       )}
@@ -46,14 +46,14 @@ export default function VinylSearchFeedback({
         est légitime, et c'est à toi de trancher.
       */}
       {search.alreadyOwned && (
-        <p className="text-amber-700 text-xs mb-4">
+        <p className="mb-4 text-xs text-warn-400">
           Tu as déjà cet album, dans un autre pressage :{" "}
           {search.alreadyOwned.label}
         </p>
       )}
 
       {search.attached && (
-        <p className="text-green-700 text-xs mb-4">
+        <p className="mb-4 text-xs text-groove-300">
           Fiche Discogs associée
           {search.attached.year ? ` — ${search.attached.year}` : ""}.
           {detachable && (

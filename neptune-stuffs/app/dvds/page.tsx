@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import AddDvd from "@/components/AddDvd";
+import CollectionHeader from "@/components/CollectionHeader";
 import DeleteDvdButton from "@/components/DeleteDvdButton";
 import EditDvdButton from "@/components/EditDvdButton";
 import SearchBar from "@/components/SearchBar";
+import Sleeve from "@/components/ui/Sleeve";
 import { getDvds } from "@/lib/collections/dvds";
 import { isSessionValid } from "@/lib/session";
 
@@ -19,40 +21,47 @@ export default async function DvdsPage({
   const dvds = await getDvds(query);
 
   return (
-    <div className="container mx-auto px-4 py-6 sm:p-8">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6">
-          Ma Collection de Dvds
-        </h1>
-        <AddDvd />
-      </div>
+    <div className="mx-auto max-w-3xl px-5 py-10 sm:px-8">
+      <CollectionHeader
+        overline="Collection"
+        title="Films & séries"
+        count={dvds.length}
+        accent="reel"
+        action={<AddDvd />}
+      />
 
-      <SearchBar placeholder="Rechercher un dvd par titre..." />
+      <SearchBar placeholder="Rechercher un titre..." />
 
       {dvds.length > 0 ? (
-        <ul className="space-y-4">
-          {dvds.map((dvd) => (
+        <ul className="mt-6 border-t border-ink-800">
+          {dvds.map((dvd, index) => (
             <li
               key={dvd.id}
-              className="bg-white p-4 rounded-lg shadow flex justify-between items-center gap-3"
+              className="group flex items-center gap-4 border-b border-ink-800 py-4 transition-colors hover:bg-ink-900/50"
             >
-              <div className="min-w-0">
-                <p className="text-lg sm:text-xl font-semibold break-words">
+              <span className="catalog-num hidden w-6 shrink-0 text-right text-xs text-paper-600 sm:block">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+
+              <Sleeve kind="dvd" />
+
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-display text-xl leading-tight text-paper-50">
                   {dvd.title}
-                  {dvd.year ? (
-                    <span className="ml-2 text-sm font-normal text-gray-500">
-                      {dvd.year}
-                    </span>
-                  ) : null}
                 </p>
                 {dvd.kind || dvd.directors ? (
-                  <p className="text-gray-600 break-words">
+                  <p className="mt-0.5 truncate text-sm text-paper-400">
                     {[dvd.kind, dvd.directors].filter(Boolean).join(" · ")}
+                  </p>
+                ) : null}
+                {dvd.year ? (
+                  <p className="catalog-num mt-1 text-xs text-reel-400/80">
+                    {dvd.year}
                   </p>
                 ) : null}
               </div>
 
-              <div className="flex flex-col md:flex-row gap-2 md:gap-4 shrink-0">
+              <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-4">
                 <EditDvdButton
                   dvdId={dvd.id}
                   currentTitle={dvd.title}
@@ -66,10 +75,12 @@ export default async function DvdsPage({
             </li>
           ))}
         </ul>
-      ) : query ? (
-        <p>Aucun dvd ne correspond à « {query} ».</p>
       ) : (
-        <p>Aucun dvd dans votre collection pour le moment.</p>
+        <p className="mt-10 text-sm text-paper-500">
+          {query
+            ? `Aucun titre ne correspond à « ${query} ».`
+            : "Aucun film pour le moment. Scannez-en un pour commencer."}
+        </p>
       )}
     </div>
   );

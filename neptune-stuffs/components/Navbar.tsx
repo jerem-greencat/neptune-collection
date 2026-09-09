@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { PRIMARY_BUTTON_CLASS } from "@/components/ui/styles";
 import { useAuth } from "@/contexts/AuthContext";
 import LoginModal from "./LoginModal";
 
@@ -37,18 +38,22 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="sticky top-0 z-40 w-full h-20 flex justify-between items-center gap-2 p-2 bg-white shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
+      <nav className="sticky top-0 z-40 flex h-16 w-full items-center justify-between gap-2 border-b border-ink-800 bg-ink-950/85 px-3 backdrop-blur-md sm:px-5">
         <Link
           href="/"
           onClick={closeMenu}
-          className="relative h-full aspect-square shrink-0"
+          className="flex shrink-0 items-center gap-2.5"
         >
           <Image
-            fill
-            src="/neptune-collects-logo.png"
-            alt="logo neptune collects"
-            className="object-cover"
+            width={36}
+            height={36}
+            src="/neptune-mark.png"
+            alt="Neptune Collects"
+            className="h-8 w-8 object-contain"
           />
+          <span className="hidden font-display text-xl leading-none text-paper-50 sm:block">
+            Neptune Collects
+          </span>
         </Link>
 
         {isUserLoggedIn && (
@@ -60,10 +65,10 @@ export default function Navbar() {
                   key={href}
                   href={href}
                   aria-current={isActive ? "page" : undefined}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-300 ${
+                  className={`flex items-center gap-2 border-b-2 px-1 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-indigo-50 text-indigo-700"
-                      : "text-gray-700 hover:bg-gray-100"
+                      ? "border-groove-400 text-paper-50"
+                      : "border-transparent text-paper-500 hover:text-paper-200"
                   }`}
                 >
                   <Icon size={18} aria-hidden="true" />
@@ -79,7 +84,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={logout}
-              className="hidden md:flex items-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300"
+              className="hidden items-center gap-2 text-sm font-medium text-paper-500 transition-colors hover:text-alert-400 md:flex"
             >
               <LogOut size={18} aria-hidden="true" />
               <span>Se déconnecter</span>
@@ -88,7 +93,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-300"
+              className={PRIMARY_BUTTON_CLASS}
             >
               <LogIn size={18} aria-hidden="true" />
               <span>Se connecter</span>
@@ -102,7 +107,7 @@ export default function Navbar() {
               aria-label={isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
               aria-expanded={isMenuOpen}
               aria-controls="mobile-menu"
-              className="md:hidden flex items-center justify-center h-12 w-12 rounded-lg text-gray-700 hover:bg-gray-100 active:bg-gray-200 transition-colors duration-300"
+              className="flex h-11 w-11 items-center justify-center rounded-md text-paper-200 transition-colors hover:bg-ink-850 md:hidden"
             >
               {isMenuOpen ? <X size={26} /> : <Menu size={26} />}
             </button>
@@ -117,12 +122,12 @@ export default function Navbar() {
             type="button"
             aria-label="Fermer le menu"
             onClick={closeMenu}
-            className="md:hidden fixed inset-0 top-20 z-30 bg-black/30"
+            className="fixed inset-0 top-16 z-30 bg-ink-950/70 backdrop-blur-sm md:hidden"
           />
 
           <div
             id="mobile-menu"
-            className="md:hidden fixed top-20 inset-x-0 z-40 bg-white border-t border-gray-100 shadow-[0_8px_16px_rgba(0,0,0,0.12)]"
+            className="fixed inset-x-0 top-16 z-40 border-b border-ink-800 bg-ink-900 md:hidden"
           >
             <div className="flex flex-col gap-2 p-3">
               {NAV_LINKS.map(({ href, label, Icon }) => {
@@ -133,10 +138,10 @@ export default function Navbar() {
                     href={href}
                     onClick={closeMenu}
                     aria-current={isActive ? "page" : undefined}
-                    className={`flex items-center gap-3 min-h-12 px-4 py-3 rounded-lg text-base font-medium transition-colors duration-300 ${
+                    className={`flex min-h-12 items-center gap-3 rounded-md px-4 py-3 text-base font-medium transition-colors ${
                       isActive
-                        ? "bg-indigo-50 text-indigo-700"
-                        : "text-gray-700 hover:bg-gray-100 active:bg-gray-200"
+                        ? "bg-ink-850 text-groove-300"
+                        : "text-paper-200 hover:bg-ink-850"
                     }`}
                   >
                     <Icon size={20} aria-hidden="true" />
@@ -148,7 +153,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="flex items-center justify-center gap-2 min-h-12 px-4 py-3 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold transition-colors duration-300"
+                className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-ink-700 px-4 py-3 font-medium text-alert-400 transition-colors hover:bg-ink-850"
               >
                 <LogOut size={20} aria-hidden="true" />
                 <span>Se déconnecter</span>

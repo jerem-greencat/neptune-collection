@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
+/*
+ * Direction « média physique ».
+ *
+ * Le point commun du disquaire et de la cinémathèque, c'est l'objet : une
+ * pochette, une jaquette, une pièce qu'on range et qu'on retrouve. D'où un fond
+ * sombre et chaud plutôt qu'un gris d'interface, un texte couleur papier, et
+ * une couleur par collection — le cuivre du sillon, le cyan de la bobine.
+ */
+@theme {
+  /* Fonds : noir chaud, jamais un noir pur. Un objet n'est pas neutre. */
+  --color-ink-950: #0b0a09;
+  --color-ink-900: #12100e;
+  --color-ink-850: #191614;
+  --color-ink-800: #221f1b;
+  --color-ink-700: #302c27;
+  --color-ink-600: #45403a;
+
+  /* Texte : blanc papier, pas blanc écran. */
+  --color-paper-50: #f4f0e8;
+  --color-paper-200: #ded8cc;
+  --color-paper-400: #a39c91;
+  --color-paper-500: #857e75;
+  --color-paper-600: #625c55;
+
+  /* Vinyle : cuivre. */
+  --color-groove-300: #ecc292;
+  --color-groove-400: #e2a75f;
+  --color-groove-500: #c9873c;
+
+  /* Film : cyan désaturé, en écho au logo. */
+  --color-reel-300: #a2d2d9;
+  --color-reel-400: #74b8c2;
+  --color-reel-500: #4a949e;
+
+  /* Avertissement : ni le cuivre du vinyle ni le cyan du film, pour rester
+     lisible comme signal sur les deux collections. */
+  --color-warn-400: #e8c766;
+
+  --color-alert-400: #e2775f;
+  --color-alert-500: #c4553d;
+
+  --font-display:
+    var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Les contrôles natifs (sélection, autofill, barres) suivent le thème. */
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-ink-950);
+  color: var(--color-paper-50);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * Grain. C'est ce détail qui sépare une surface imprimée d'un aplat d'écran ;
+ * sans lui, un fond sombre reste plat. Il vit derrière le contenu, à opacité
+ * très basse, et n'intercepte jamais un clic.
+ */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Halo froid en haut de page : la lumière d'un projecteur. */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 50%;
+  z-index: 0;
+  width: min(70rem, 140vw);
+  height: 28rem;
+  transform: translateX(-50%);
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at top,
+    rgba(116, 184, 194, 0.09),
+    transparent 70%
+  );
+}
+
+/* Le contenu passe au-dessus des deux textures. */
+body > * {
+  position: relative;
+  z-index: 1;
+}
+
+::selection {
+  background-color: var(--color-groove-500);
+  color: var(--color-ink-950);
+}
+
+/*
+ * Étiquette de catalogue : petites capitales espacées. Utilisée pour les
+ * intitulés de champ et les en-têtes de colonne, là où le texte est une
+ * indication et non un contenu.
+ */
+@utility label-caps {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-paper-500);
+}
+
+/* Chiffres de catalogue : année, code-barres, index. */
+@utility catalog-num {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
 }
