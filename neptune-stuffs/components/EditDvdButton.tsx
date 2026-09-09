@@ -36,7 +36,9 @@ export default function EditDvdButton({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [barcode, setBarcode] = useState(currentBarcode ?? "");
 
-  const search = useMovieSearch(currentTitle);
+  // L'identifiant exclut ce dvd de la recherche de doublon : il se reconnaîtrait
+  // lui-même.
+  const search = useMovieSearch(currentTitle, dvdId);
 
   const resetState = () => {
     setBarcode(currentBarcode ?? "");

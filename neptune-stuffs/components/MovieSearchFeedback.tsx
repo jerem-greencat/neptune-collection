@@ -37,6 +37,17 @@ export default function MovieSearchFeedback({
           Fiche associée : {describeWork(search.picked)}
         </p>
       )}
+
+      {/*
+        Un avertissement, pas un blocage : posséder le même film en DVD et en
+        Blu-ray est légitime, et c'est à toi de trancher.
+      */}
+      {search.alreadyOwned && (
+        <p className="text-amber-700 text-xs mt-2">
+          Tu as déjà ce film, dans une autre édition :{" "}
+          {search.alreadyOwned.label}
+        </p>
+      )}
     </>
   );
 }

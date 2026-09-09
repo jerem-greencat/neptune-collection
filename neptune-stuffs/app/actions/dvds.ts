@@ -13,7 +13,7 @@ import {
   describeValidationError,
   filmFields,
 } from "@/lib/collections/fields";
-import { findByBarcode } from "@/lib/collections/lookup";
+import { findByBarcode, findOwnedWork } from "@/lib/collections/lookup";
 import type {
   BarcodeLookupResult,
   MovieSearchResult,
@@ -175,5 +175,35 @@ export async function searchMoviesAction(
       success: false,
       error: describeExternalError(error, "La recherche de film a échoué."),
     };
+  }
+}
+
+/**
+ * Cherche si l'œuvre choisie est déjà dans la collection, dans quelque édition
+ * que ce soit.
+ *
+ * Complète la recherche par code-barres, qui ne repère qu'une édition à
+ * l'identique : deux tirages du même film, ou le même film en DVD et en
+ * Blu-ray, portent des codes-barres différents.
+ */
+export async function findOwnedMovieAction(
+  wikidataId: string | undefined,
+  imdbId: string | undefined,
+  excludeDvdId?: string,
+): Promise<BarcodeLookupResult> {
+  if (!(await isSessionValid())) return UNAUTHORIZED;
+
+  try {
+    return {
+      success: true,
+      alreadyOwned: await findOwnedWork(
+        "dvds",
+        { wikidataId, imdbId },
+        excludeDvdId,
+      ),
+    };
+  } catch (error) {
+    console.error("Erreur lors de la recherche de doublon:", error);
+    return { success: false, error: describeDatabaseError(error) };
   }
 }
